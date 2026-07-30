@@ -1,0 +1,68 @@
+# Desarrollo local — implementa la separación de roles de ADR-006
+# (docs/decisions/ADR-006.md): sige_migrator (owner, solo Alembic) vs.
+# sige_app (NOSUPERUSER, solo DML, el único rol que usa el backend).
+#
+# Variables de entorno: copiar .env.example a .env y llenar los valores
+# antes de levantar. docker-compose las carga automáticamente desde .env.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      # Bootstrap del contenedor: el entrypoint oficial de postgres crea
+      # este usuario con privilegios de owner/superuser sobre POSTGRES_DB.
+      # Es sige_migrator — Alembic corre con él, el backend nunca.
+      POSTGRES_USER: ${DB_MIGRATOR_USER}
+      POSTGRES_PASSWORD: ${DB_MIGRATOR_PASSWORD}
+      POSTGRES_DB: sige
+      # Leídas por db/init/01_create_app_role.sh para crear sige_app.
+      DB_APP_USER: ${DB_APP_USER}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Corre una sola vez, al inicializar el volumen (vacío). Crea el rol
+      # de runtime sige_app; sige_migrator ya existe vía POSTGRES_USER.
+      - ./db/init/01_create_app_role.sh:/docker-entrypoint-initdb.d/01_create_app_role.sh:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Corre `alembic upgrade head` con el rol owner (sige_migrator) y termina
+  # (no es un servicio de larga duracion). `app` espera a que este
+  # contenedor termine con exit 0 antes de arrancar — asi el esquema
+  # siempre existe antes de servir trafico, sin que `app` reciba jamas
+  # DATABASE_URL_MIGRATIONS (ADR-006).
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL_MIGRATIONS: ${DATABASE_URL_MIGRATIONS}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Único DSN que ve el backend en runtime — el rol sige_app, sin
+      # privilegios de owner/superuser (ver ADR-006). Nunca inyectar aquí
+      # DATABASE_URL_MIGRATIONS.
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

@@ -1,0 +1,398 @@
+-- =====================================================================
+-- SIGE MVP — DDL completo
+-- Fuente: docs/data-dictionary/mvp.md + docs/rbac/matriz-rbac-mvp.md
+--         + ADR-001 a ADR-005
+-- Orden de creación: respeta dependencia real de FKs.
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 1. PLANTEL
+-- ---------------------------------------------------------------------
+CREATE TABLE plantel (
+    id_plantel      SERIAL PRIMARY KEY,
+    clave_plantel   VARCHAR(20) NOT NULL UNIQUE,
+    nombre_plantel  VARCHAR(200) NOT NULL,
+    municipio       VARCHAR(100) NOT NULL,
+    estado          VARCHAR(80) NOT NULL,
+    domicilio       VARCHAR(300),
+    telefono        VARCHAR(20),
+    email           VARCHAR(100),
+    estatus         VARCHAR(20) NOT NULL DEFAULT 'activo'
+);
+
+-- ---------------------------------------------------------------------
+-- 2. CICLO_ESCOLAR
+-- ---------------------------------------------------------------------
+CREATE TABLE ciclo_escolar (
+    id_ciclo        SERIAL PRIMARY KEY,
+    nombre          VARCHAR(20) NOT NULL UNIQUE,
+    fecha_inicio    DATE NOT NULL,
+    fecha_fin       DATE NOT NULL,
+    activo          BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT chk_ciclo_fechas CHECK (fecha_fin > fecha_inicio)
+);
+
+-- Garantiza que solo un ciclo esté activo a la vez (índice parcial único)
+CREATE UNIQUE INDEX uq_ciclo_escolar_activo
+    ON ciclo_escolar (activo)
+    WHERE activo = true;
+
+-- ---------------------------------------------------------------------
+-- 3. PERIODO_SEMESTRAL
+-- ---------------------------------------------------------------------
+CREATE TABLE periodo_semestral (
+    id_periodo      SERIAL PRIMARY KEY,
+    id_ciclo        INT NOT NULL REFERENCES ciclo_escolar(id_ciclo),
+    clave_periodo   VARCHAR(10) NOT NULL UNIQUE,
+    numero_periodo  SMALLINT NOT NULL CHECK (numero_periodo IN (1, 2)),
+    fecha_inicio    DATE NOT NULL,
+    fecha_fin       DATE NOT NULL,
+    activo          BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT chk_periodo_fechas CHECK (fecha_fin > fecha_inicio),
+    CONSTRAINT uq_periodo_ciclo_numero UNIQUE (id_ciclo, numero_periodo)
+);
+
+CREATE UNIQUE INDEX uq_periodo_semestral_activo
+    ON periodo_semestral (activo)
+    WHERE activo = true;
+
+-- ---------------------------------------------------------------------
+-- 4. PERSONAL
+-- ADR-003: rol colapsado en un solo campo (docente / directivo / admin)
+-- ---------------------------------------------------------------------
+CREATE TABLE personal (
+    id_personal         SERIAL PRIMARY KEY,
+    id_plantel          INT NOT NULL REFERENCES plantel(id_plantel),
+    curp                CHAR(18) NOT NULL UNIQUE,
+    nombre              VARCHAR(80) NOT NULL,
+    apellido_paterno    VARCHAR(60) NOT NULL,
+    apellido_materno    VARCHAR(60),
+    email_institucional VARCHAR(100) NOT NULL UNIQUE,
+    password_hash       VARCHAR(255) NOT NULL,
+    rol                 VARCHAR(20) NOT NULL CHECK (rol IN ('docente', 'directivo', 'admin')),
+    telefono            VARCHAR(20),
+    fecha_ingreso       DATE,
+    estatus             VARCHAR(20) NOT NULL DEFAULT 'activo'
+);
+
+-- ---------------------------------------------------------------------
+-- 5. GRUPO
+-- Nota: num_alumnos_inscritos NO es columna (ver ADR heredado del punto 1
+-- del modelo lógico completo) — se calcula vía vista, ver al final del archivo.
+-- ---------------------------------------------------------------------
+CREATE TABLE grupo (
+    id_grupo            SERIAL PRIMARY KEY,
+    id_plantel          INT NOT NULL REFERENCES plantel(id_plantel),
+    id_periodo          INT NOT NULL REFERENCES periodo_semestral(id_periodo),
+    semestre            SMALLINT NOT NULL CHECK (semestre BETWEEN 1 AND 6),
+    nombre_grupo        VARCHAR(10) NOT NULL,
+    capacidad_maxima    INT,
+    CONSTRAINT uq_grupo_nombre_periodo UNIQUE (id_plantel, id_periodo, nombre_grupo)
+);
+
+-- ---------------------------------------------------------------------
+-- 6. ASIGNATURA
+-- ---------------------------------------------------------------------
+CREATE TABLE asignatura (
+    id_asignatura   SERIAL PRIMARY KEY,
+    clave_asignatura VARCHAR(20) NOT NULL UNIQUE,
+    nombre          VARCHAR(120) NOT NULL,
+    semestre        SMALLINT NOT NULL CHECK (semestre BETWEEN 1 AND 6),
+    activa          BOOLEAN NOT NULL DEFAULT true
+);
+
+-- ---------------------------------------------------------------------
+-- 7. GRUPO_ASIGNATURA
+-- Punto de control central: ancla de toda CALIFICACION.
+-- ---------------------------------------------------------------------
+CREATE TABLE grupo_asignatura (
+    id_grupo_asig   SERIAL PRIMARY KEY,
+    id_grupo        INT NOT NULL REFERENCES grupo(id_grupo),
+    id_asignatura   INT NOT NULL REFERENCES asignatura(id_asignatura),
+    id_docente      INT NOT NULL REFERENCES personal(id_personal),
+    id_periodo      INT NOT NULL REFERENCES periodo_semestral(id_periodo),
+    CONSTRAINT uq_grupo_asignatura_periodo UNIQUE (id_grupo, id_asignatura, id_periodo)
+    -- Pendiente confirmado en diccionario de datos: validar con plantel piloto
+    -- si un grupo puede tener 2 docentes para la misma materia (partición).
+    -- Si aplica, cambiar a UNIQUE (id_grupo, id_asignatura, id_periodo, id_docente).
+);
+
+-- Validación de que id_docente tenga rol = 'docente' (no se puede expresar
+-- como CHECK simple entre tablas en Postgres estándar; se aplica vía
+-- trigger, ya que es una regla de integridad de datos, no de RBAC).
+CREATE OR REPLACE FUNCTION fn_valida_rol_docente()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM personal
+        WHERE id_personal = NEW.id_docente AND rol = 'docente'
+    ) THEN
+        RAISE EXCEPTION 'id_docente (%) debe referenciar a un registro de personal con rol = docente', NEW.id_docente;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_valida_rol_docente
+    BEFORE INSERT OR UPDATE ON grupo_asignatura
+    FOR EACH ROW EXECUTE FUNCTION fn_valida_rol_docente();
+
+-- ---------------------------------------------------------------------
+-- 8. ALUMNO
+-- ---------------------------------------------------------------------
+CREATE TABLE alumno (
+    id_alumno           SERIAL PRIMARY KEY,
+    id_plantel          INT NOT NULL REFERENCES plantel(id_plantel),
+    id_grupo            INT REFERENCES grupo(id_grupo),
+    matricula           VARCHAR(20) NOT NULL UNIQUE,
+    curp                CHAR(18) NOT NULL UNIQUE,
+    nombre              VARCHAR(80) NOT NULL,
+    apellido_paterno    VARCHAR(60) NOT NULL,
+    apellido_materno    VARCHAR(60),
+    fecha_nacimiento    DATE NOT NULL,
+    sexo                CHAR(1),
+    email               VARCHAR(100),
+    telefono_personal   VARCHAR(20),
+    estatus             VARCHAR(20) NOT NULL DEFAULT 'activo',
+    fecha_inscripcion   DATE NOT NULL,
+    fecha_baja          DATE
+);
+
+-- ---------------------------------------------------------------------
+-- 9. EXPEDIENTE_ACADEMICO
+-- ADR-001: tabla separada de Alumno para RLS granular.
+-- ADR-005: promedio_actual se calcula en el service, no en BD.
+-- ---------------------------------------------------------------------
+CREATE TABLE expediente_academico (
+    id_exp_academico    SERIAL PRIMARY KEY,
+    id_alumno           INT NOT NULL UNIQUE REFERENCES alumno(id_alumno),
+    escuela_procedencia VARCHAR(200),
+    promedio_secundaria DECIMAL(4,2),
+    promedio_actual     DECIMAL(4,2),
+    situacion_academica VARCHAR(20) NOT NULL DEFAULT 'regular'
+        CHECK (situacion_academica IN ('regular', 'irregular', 'condicionado'))
+);
+
+-- ---------------------------------------------------------------------
+-- 10. CALIFICACION
+-- ADR-005: calificacion_final y estatus se calculan en el service.
+-- ---------------------------------------------------------------------
+CREATE TABLE calificacion (
+    id_calificacion     SERIAL PRIMARY KEY,
+    id_alumno           INT NOT NULL REFERENCES alumno(id_alumno),
+    id_grupo_asig       INT NOT NULL REFERENCES grupo_asignatura(id_grupo_asig),
+    parcial_1           DECIMAL(4,1) CHECK (parcial_1 BETWEEN 0 AND 10),
+    parcial_2           DECIMAL(4,1) CHECK (parcial_2 BETWEEN 0 AND 10),
+    parcial_3           DECIMAL(4,1) CHECK (parcial_3 BETWEEN 0 AND 10),
+    calificacion_final  DECIMAL(4,1) CHECK (calificacion_final BETWEEN 0 AND 10),
+    tipo_evaluacion     VARCHAR(20) NOT NULL DEFAULT 'ordinaria'
+        CHECK (tipo_evaluacion IN ('ordinaria', 'extraordinaria')),
+    estatus             VARCHAR(15) NOT NULL DEFAULT 'pendiente'
+        CHECK (estatus IN ('aprobado', 'reprobado', 'pendiente')),
+    fecha_captura       TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT uq_calificacion_alumno_grupo_asig UNIQUE (id_alumno, id_grupo_asig)
+);
+
+-- ---------------------------------------------------------------------
+-- 11. AUDITORIA_CALIFICACION
+-- ADR-004: distingue quién capturó vs. quién modificó (directivo/admin
+-- pueden corregir calificaciones ya capturadas por el docente original).
+-- Append-only: sin UPDATE ni DELETE permitido a nivel de aplicación.
+-- ---------------------------------------------------------------------
+CREATE TABLE auditoria_calificacion (
+    id_auditoria            SERIAL PRIMARY KEY,
+    id_calificacion         INT NOT NULL REFERENCES calificacion(id_calificacion),
+    id_personal_capturo     INT REFERENCES personal(id_personal),
+    id_personal_modifico    INT REFERENCES personal(id_personal),
+    accion                  VARCHAR(20) NOT NULL CHECK (accion IN ('captura', 'correccion')),
+    valores_anteriores      JSONB,
+    valores_nuevos          JSONB,
+    fecha_evento            TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- =====================================================================
+-- VISTAS CALCULADAS (evitan columnas mantenidas a mano — ver ADR heredado)
+-- =====================================================================
+
+CREATE OR REPLACE VIEW vw_grupo_num_alumnos AS
+SELECT g.id_grupo, COUNT(a.id_alumno) AS num_alumnos_inscritos
+FROM grupo g
+LEFT JOIN alumno a ON a.id_grupo = g.id_grupo AND a.estatus = 'activo'
+GROUP BY g.id_grupo;
+
+CREATE OR REPLACE VIEW vw_plantel_matricula_total AS
+SELECT p.id_plantel, COUNT(a.id_alumno) AS matricula_total
+FROM plantel p
+LEFT JOIN alumno a ON a.id_plantel = p.id_plantel AND a.estatus = 'activo'
+GROUP BY p.id_plantel;
+
+-- =====================================================================
+-- ROW-LEVEL SECURITY — traducido de docs/rbac/matriz-rbac-mvp.md
+-- =====================================================================
+-- Convención: el backend, al abrir la sesión de BD tras autenticar el JWT,
+-- ejecuta:
+--   SET app.current_personal_id = '<id_personal>';
+--   SET app.current_rol = '<docente|directivo|admin>';
+--   SET app.current_plantel_id = '<id_plantel>';
+-- Estas políticas asumen esa convención.
+--
+-- current_setting('app.x') SIN el segundo argumento lanza
+-- "unrecognized configuration parameter" si la sesión nunca hizo SET (ej.
+-- conexión directa por psql, script de mantenimiento, o bug en el backend
+-- que no inyectó la sesión) — un error 500 en vez de una denegación de
+-- acceso limpia. Se usa current_setting(name, true) (missing_ok), que
+-- devuelve NULL en ese caso; las comparaciones con NULL son NULL/false en
+-- USING y WITH CHECK, o sea deniegan por defecto (fail-closed).
+CREATE OR REPLACE FUNCTION app_current_rol() RETURNS TEXT AS $$
+    SELECT current_setting('app.current_rol', true);
+$$ LANGUAGE sql STABLE;
+
+CREATE OR REPLACE FUNCTION app_current_personal_id() RETURNS INT AS $$
+    SELECT NULLIF(current_setting('app.current_personal_id', true), '')::INT;
+$$ LANGUAGE sql STABLE;
+
+-- ---------------------------------------------------------------------
+-- PERSONAL: docente ve solo su propio registro; directivo/admin ven todo
+-- el plantel. Solo admin puede escribir (crear/editar/dar de baja).
+-- ---------------------------------------------------------------------
+ALTER TABLE personal ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY personal_select ON personal
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_personal = app_current_personal_id()
+    );
+
+CREATE POLICY personal_insert ON personal
+    FOR INSERT
+    WITH CHECK (app_current_rol() = 'admin');
+
+CREATE POLICY personal_update ON personal
+    FOR UPDATE
+    USING (app_current_rol() = 'admin')
+    WITH CHECK (app_current_rol() = 'admin');
+
+CREATE POLICY personal_delete ON personal
+    FOR DELETE
+    USING (app_current_rol() = 'admin');
+
+-- ---------------------------------------------------------------------
+-- GRUPO_ASIGNATURA: docente ve solo las suyas; directivo/admin ven y
+-- escriben todas las del plantel.
+-- ---------------------------------------------------------------------
+ALTER TABLE grupo_asignatura ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY grupo_asignatura_select ON grupo_asignatura
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_docente = app_current_personal_id()
+    );
+
+CREATE POLICY grupo_asignatura_write ON grupo_asignatura
+    FOR ALL
+    USING (app_current_rol() IN ('directivo', 'admin'))
+    WITH CHECK (app_current_rol() IN ('directivo', 'admin'));
+
+-- ---------------------------------------------------------------------
+-- CALIFICACION: docente C-R-U solo de sus grupo_asignatura;
+-- directivo/admin R-U de todo el plantel (ADR-004: sí pueden corregir).
+-- ---------------------------------------------------------------------
+ALTER TABLE calificacion ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY calificacion_select ON calificacion
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
+    );
+
+CREATE POLICY calificacion_insert ON calificacion
+    FOR INSERT
+    WITH CHECK (
+        app_current_rol() = 'docente'
+        AND id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
+    );
+
+CREATE POLICY calificacion_update ON calificacion
+    FOR UPDATE
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
+    );
+
+-- ---------------------------------------------------------------------
+-- EXPEDIENTE_ACADEMICO: docente lee (con promedio general, según lo
+-- confirmado); directivo/admin C-R-U completo.
+-- ---------------------------------------------------------------------
+ALTER TABLE expediente_academico ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY expediente_academico_select ON expediente_academico
+    FOR SELECT
+    USING (true); -- todos los roles autenticados leen; el filtro de campo
+                  -- sensible (Nivel 3 de la matriz) se aplica en el schema
+                  -- Pydantic de respuesta, no en RLS de fila.
+
+CREATE POLICY expediente_academico_write ON expediente_academico
+    FOR ALL
+    USING (app_current_rol() IN ('directivo', 'admin'))
+    WITH CHECK (app_current_rol() IN ('directivo', 'admin'));
+
+-- ---------------------------------------------------------------------
+-- ALUMNO: docente ve solo alumnos de sus grupos con asignatura activa;
+-- directivo/admin ven y escriben todo el plantel.
+-- Nota: el ocultamiento de campos (curp visible, email/telefono/fecha_nac
+-- ocultos para docente) se aplica en el schema Pydantic de respuesta
+-- (Nivel 3 de la matriz), no en RLS — RLS filtra filas, no columnas.
+-- ---------------------------------------------------------------------
+ALTER TABLE alumno ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY alumno_select ON alumno
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_grupo IN (
+            SELECT ga.id_grupo FROM grupo_asignatura ga
+            WHERE ga.id_docente = app_current_personal_id()
+        )
+    );
+
+CREATE POLICY alumno_write ON alumno
+    FOR ALL
+    USING (app_current_rol() IN ('directivo', 'admin'))
+    WITH CHECK (app_current_rol() IN ('directivo', 'admin'));
+
+-- ---------------------------------------------------------------------
+-- AUDITORIA_CALIFICACION: solo lectura para directivo/admin; sin acceso
+-- para docente. Append-only — no se exponen políticas de UPDATE/DELETE
+-- a ningún rol vía API (solo el usuario de servicio del backend inserta).
+-- ---------------------------------------------------------------------
+ALTER TABLE auditoria_calificacion ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY auditoria_calificacion_select ON auditoria_calificacion
+    FOR SELECT
+    USING (app_current_rol() IN ('directivo', 'admin'));
+
+CREATE POLICY auditoria_calificacion_insert ON auditoria_calificacion
+    FOR INSERT
+    WITH CHECK (true); -- el service backend inserta siempre; el control
+                        -- real de quién puede disparar una inserción vive
+                        -- en la lógica de aplicación, no en RLS.
+
+-- ---------------------------------------------------------------------
+-- Resto de tablas (PLANTEL, CICLO_ESCOLAR, PERIODO_SEMESTRAL, GRUPO,
+-- ASIGNATURA): sin RLS por fila (todo el contenido es del único plantel
+-- del MVP), pero si se filtran por rol a nivel de escritura vía checks
+-- en el service, no en BD, dado su bajo riesgo relativo. Revisar si se
+-- requiere RLS explícito al expandir a más de un plantel.
+-- =====================================================================

@@ -1,0 +1,127 @@
+erDiagram
+  PLANTEL ||--o{ PERSONAL : emplea
+  PLANTEL ||--o{ GRUPO : tiene
+  PLANTEL ||--o{ ALUMNO : inscribe
+  CICLO_ESCOLAR ||--o{ PERIODO_SEMESTRAL : contiene
+  PERIODO_SEMESTRAL ||--o{ GRUPO : agrupa
+  PERIODO_SEMESTRAL ||--o{ GRUPO_ASIGNATURA : ancla
+  GRUPO ||--o{ ALUMNO : contiene
+  GRUPO ||--o{ GRUPO_ASIGNATURA : ofrece
+  ASIGNATURA ||--o{ GRUPO_ASIGNATURA : se_imparte_en
+  PERSONAL ||--o{ GRUPO_ASIGNATURA : imparte
+  GRUPO_ASIGNATURA ||--o{ CALIFICACION : registra
+  ALUMNO ||--o{ CALIFICACION : recibe
+  ALUMNO ||--|| EXPEDIENTE_ACADEMICO : tiene
+  CALIFICACION ||--o{ AUDITORIA_CALIFICACION : genera
+  PERSONAL ||--o{ AUDITORIA_CALIFICACION : ejecuta
+
+  PLANTEL {
+    int id_plantel PK
+    string clave_plantel
+    string nombre_plantel
+    string municipio
+    string estado
+    string domicilio
+    string telefono
+    string email
+    string estatus
+  }
+  CICLO_ESCOLAR {
+    int id_ciclo PK
+    string nombre
+    date fecha_inicio
+    date fecha_fin
+    boolean activo
+  }
+  PERIODO_SEMESTRAL {
+    int id_periodo PK
+    int id_ciclo FK
+    string clave_periodo
+    smallint numero_periodo
+    date fecha_inicio
+    date fecha_fin
+    boolean activo
+  }
+  PERSONAL {
+    int id_personal PK
+    int id_plantel FK
+    string curp
+    string nombre
+    string apellido_paterno
+    string apellido_materno
+    string email_institucional
+    string password_hash
+    string rol
+    string telefono
+    date fecha_ingreso
+    string estatus
+  }
+  GRUPO {
+    int id_grupo PK
+    int id_plantel FK
+    int id_periodo FK
+    smallint semestre
+    string nombre_grupo
+    int capacidad_maxima
+  }
+  ASIGNATURA {
+    int id_asignatura PK
+    string clave_asignatura
+    string nombre
+    smallint semestre
+    boolean activa
+  }
+  GRUPO_ASIGNATURA {
+    int id_grupo_asig PK
+    int id_grupo FK
+    int id_asignatura FK
+    int id_docente FK
+    int id_periodo FK
+  }
+  ALUMNO {
+    int id_alumno PK
+    int id_plantel FK
+    int id_grupo FK
+    string matricula
+    string curp
+    string nombre
+    string apellido_paterno
+    string apellido_materno
+    date fecha_nacimiento
+    string sexo
+    string email
+    string telefono_personal
+    string estatus
+    date fecha_inscripcion
+    date fecha_baja
+  }
+  EXPEDIENTE_ACADEMICO {
+    int id_exp_academico PK
+    int id_alumno FK
+    string escuela_procedencia
+    decimal promedio_secundaria
+    decimal promedio_actual
+    string situacion_academica
+  }
+  CALIFICACION {
+    int id_calificacion PK
+    int id_alumno FK
+    int id_grupo_asig FK
+    decimal parcial_1
+    decimal parcial_2
+    decimal parcial_3
+    decimal calificacion_final
+    string tipo_evaluacion
+    string estatus
+    timestamp fecha_captura
+  }
+  AUDITORIA_CALIFICACION {
+    int id_auditoria PK
+    int id_calificacion FK
+    int id_personal_capturo FK
+    int id_personal_modifico FK
+    string accion
+    jsonb valores_anteriores
+    jsonb valores_nuevos
+    timestamp fecha_evento
+  }

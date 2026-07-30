@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  fase0-gate:
+    # Reproduce los 4 puntos del gate de cierre de Fase 0 (ver docs/decisions
+    # y la validacion manual): Postgres con los 2 roles de ADR-006, la
+    # migracion de Alembic aplicando limpio, y GET /health confirmando
+    # conexion real a BD con el rol de runtime sige_app.
+    runs-on: ubuntu-latest
+    env:
+      DB_MIGRATOR_USER: sige_migrator
+      DB_MIGRATOR_PASSWORD: ci_only_migrator_pw
+      DB_APP_USER: sige_app
+      DB_APP_PASSWORD: ci_only_app_pw
+      # "db" es el hostname dentro de la red de docker compose (nombre del
+      # servicio), no "localhost" — migrate/app corren en sus propios
+      # contenedores, no en el host del runner.
+      DATABASE_URL_MIGRATIONS: postgresql://sige_migrator:ci_only_migrator_pw@db:5432/sige
+      DATABASE_URL: postgresql://sige_app:ci_only_app_pw@db:5432/sige
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Levantar stack (db -> migrate -> app)
+        run: docker compose up -d --build
+
+      - name: Punto 1 - Postgres levanta con los 2 roles del ADR-006
+        run: |
+          roles=$(docker compose exec -T db psql -U "$DB_MIGRATOR_USER" -d sige -t -A -c "\du")
+          echo "$roles"
+          echo "$roles" | grep -q "^sige_migrator|"
+          echo "$roles" | grep -q "^sige_app|"
+
+      - name: Punto 2 - la migracion de Alembic aplico limpio (exit 0)
+        run: |
+          exit_code=$(docker inspect -f '{{.State.ExitCode}}' "$(docker compose ps -q migrate)")
+          echo "exit code de migrate: $exit_code"
+          test "$exit_code" = "0"
+
+      - name: Punto 3 - GET /health responde 200 con conexion real a BD
+        run: |
+          http_status="000"
+          for i in $(seq 1 30); do
+            http_status=$(curl -s -o /tmp/health.json -w '%{http_code}' http://localhost:8000/health || true)
+            [ "$http_status" = "200" ] && break
+            sleep 1
+          done
+          echo "http status: $http_status"
+          cat /tmp/health.json
+          echo
+          test "$http_status" = "200"
+          grep -q '"status":"ok"' /tmp/health.json
+          grep -q '"db":"connected"' /tmp/health.json
+
+      - name: Logs (si algo fallo arriba)
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar stack
+        if: always()
+        run: docker compose down -v
