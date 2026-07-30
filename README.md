@@ -1,4 +1,4 @@
-# SIGE MVP — Brief para Claude Code
+# SIGE MVP
 
 ## Qué es el sistema
 
@@ -57,7 +57,7 @@ separadas si el sistema crece a más roles (orientador, subdirector, etc.).
 
 ---
 
-## Requisitos no negociables desde el día 1
+## Requisitos no negociables
 
 - **Control de acceso real, no simulado**: cada endpoint debe verificar el rol
   del usuario autenticado. Un docente nunca debe poder escribir calificaciones

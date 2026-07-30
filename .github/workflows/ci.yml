@@ -36,7 +36,14 @@ jobs:
 
       - name: Punto 2 - la migracion de Alembic aplico limpio (exit 0)
         run: |
-          exit_code=$(docker inspect -f '{{.State.ExitCode}}' "$(docker compose ps -q migrate)")
+          # -a/--all es obligatorio: `docker compose ps` (v2) solo lista
+          # contenedores corriendo por defecto, como `docker ps`. migrate
+          # ya termino (exit 0 esperado) y por diseno no queda "running",
+          # asi que sin -a esto devuelve vacio y el docker inspect siguiente
+          # falla con "invalid container name or ID: value is empty".
+          container_id=$(docker compose ps -aq migrate)
+          test -n "$container_id"
+          exit_code=$(docker inspect -f '{{.State.ExitCode}}' "$container_id")
           echo "exit code de migrate: $exit_code"
           test "$exit_code" = "0"
 
