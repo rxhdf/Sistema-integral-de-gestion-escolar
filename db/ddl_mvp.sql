@@ -396,3 +396,35 @@ CREATE POLICY auditoria_calificacion_insert ON auditoria_calificacion
 -- en el service, no en BD, dado su bajo riesgo relativo. Revisar si se
 -- requiere RLS explícito al expandir a más de un plantel.
 -- =====================================================================
+
+-- =====================================================================
+-- LOGIN LOOKUP — ADR-007
+-- Excepción puntual y acotada a RLS de `personal`: el login necesita leer
+-- la fila por email ANTES de que exista sesión (app.current_rol /
+-- app.current_personal_id), momento en el que personal_select siempre
+-- deniega (fail-closed). Ver ADR-007 para el razonamiento completo — esta
+-- función NO es un patrón a reutilizar para otros casos sin la misma
+-- discusión.
+-- =====================================================================
+CREATE OR REPLACE FUNCTION fn_login_lookup(p_email VARCHAR(100))
+RETURNS TABLE (
+    id_personal     INT,
+    rol             VARCHAR(20),
+    password_hash   VARCHAR(255),
+    estatus         VARCHAR(20)
+)
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT p.id_personal, p.rol, p.password_hash, p.estatus
+    FROM personal p
+    WHERE p.email_institucional = p_email
+      AND p.estatus = 'activo';
+$$;
+
+-- Postgres otorga EXECUTE a PUBLIC por defecto al crear una función;
+-- se revoca y se otorga explícitamente solo a sige_app (ADR-007).
+REVOKE ALL ON FUNCTION fn_login_lookup(VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_login_lookup(VARCHAR) TO sige_app;
