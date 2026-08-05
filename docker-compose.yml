@@ -56,6 +56,9 @@ services:
       # privilegios de owner/superuser (ver ADR-006). Nunca inyectar aquí
       # DATABASE_URL_MIGRATIONS.
       DATABASE_URL: ${DATABASE_URL}
+      # Firma de JWT (app/core/security.py) — ver .env.example.
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-60}
     ports:
       - "8000:8000"
     depends_on:

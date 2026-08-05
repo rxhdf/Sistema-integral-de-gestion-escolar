@@ -3,8 +3,14 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from app.db.session import engine
+from app.domains.organizacional.router import router as organizacional_router
+from app.domains.personal.router import auth_router, router as personal_router
 
 app = FastAPI()
+
+app.include_router(auth_router, tags=["auth"])
+app.include_router(organizacional_router, tags=["organizacional"])
+app.include_router(personal_router, tags=["personal"])
 
 
 @app.get("/health")

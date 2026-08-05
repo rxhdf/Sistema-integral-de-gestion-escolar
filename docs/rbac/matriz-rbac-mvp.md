@@ -28,6 +28,14 @@ gestión de cuentas de `Personal`.
 | `Expediente_Academico` | R (campos limitados, ver Nivel 3) | C, R, U | C, R, U |
 | `Calificacion` | C, R, U (solo de sus `Grupo_Asignatura`) | R, U (puede corregir calificación ya capturada por docente) | R, U (mismo alcance que directivo) |
 
+> **Nota — `Plantel` sin `C`:** ningún rol tiene `Create` sobre `Plantel`,
+> ni siquiera `admin` — el MVP es de un solo plantel
+> (`docs/data_dictionary/mvp.md` #1), y esa fila se crea vía seed/migración,
+> no vía API. `app/domains/organizacional/router.py` no expone
+> `POST /plantel` intencionalmente (solo `GET`, que cubre la `R` de los
+> tres roles; el `U` de directivo/admin todavía no tiene endpoint, no
+> confundir con que esté bloqueado a propósito como el `C`).
+
 ---
 
 ## Nivel 2: Alcance (scope) por entidad con acceso restringido
