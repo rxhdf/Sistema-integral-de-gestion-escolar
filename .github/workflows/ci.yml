@@ -9,7 +9,10 @@ jobs:
     # Reproduce los 4 puntos del gate de cierre de Fase 0 (ver docs/decisions
     # y la validacion manual): Postgres con los 2 roles de ADR-006, la
     # migracion de Alembic aplicando limpio, y GET /health confirmando
-    # conexion real a BD con el rol de runtime sige_app.
+    # conexion real a BD con el rol de runtime sige_app. Desde el cierre de
+    # Fase 2 tambien corre la suite de pytest (RBAC + cadena JWT -> SET ->
+    # RLS de docs/validacion/) en cada push/PR — el nombre del job se deja
+    # igual para no romper reglas de branch protection que ya lo referencien.
     runs-on: ubuntu-latest
     env:
       DB_MIGRATOR_USER: sige_migrator
@@ -21,6 +24,10 @@ jobs:
       # contenedores, no en el host del runner.
       DATABASE_URL_MIGRATIONS: postgresql://sige_migrator:ci_only_migrator_pw@db:5432/sige
       DATABASE_URL: postgresql://sige_app:ci_only_app_pw@db:5432/sige
+      # app/core/security.py (ver Fase 2): sin default — el contenedor app
+      # no arranca sin esto (falla explicito, no silencioso).
+      JWT_SECRET_KEY: ci_only_jwt_secret_do_not_use_in_prod
+      JWT_EXPIRE_MINUTES: "60"
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +68,24 @@ jobs:
           test "$http_status" = "200"
           grep -q '"status":"ok"' /tmp/health.json
           grep -q '"db":"connected"' /tmp/health.json
+
+      - name: Preparar Python para pytest
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias de test
+        run: pip install -r requirements-dev.txt
+
+      - name: Punto 4 - suite de pytest (RBAC + cadena JWT -> SET -> RLS)
+        # El puerto 5432 de "db" ya esta publicado al host del runner
+        # (docker-compose.yml), asi que pytest corre fuera de los
+        # contenedores y le habla a Postgres por localhost — a diferencia
+        # de migrate/app, que estan en la red de compose y usan "db".
+        env:
+          DATABASE_URL_MIGRATIONS: postgresql://sige_migrator:ci_only_migrator_pw@localhost:5432/sige
+          DATABASE_URL: postgresql://sige_app:ci_only_app_pw@localhost:5432/sige
+        run: python -m pytest -v
 
       - name: Logs (si algo fallo arriba)
         if: failure()
