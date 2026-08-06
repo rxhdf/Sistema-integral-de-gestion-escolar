@@ -40,7 +40,11 @@ def seed():
     with _MigratorSession() as db:
         db.execute(
             text(
-                "TRUNCATE personal, periodo_semestral, ciclo_escolar, plantel "
+                # asignatura no tiene FK hacia ninguna de las otras 4 tablas
+                # (ver db/ddl_mvp.sql #6) — TRUNCATE ... CASCADE solo alcanza
+                # tablas hijas, así que hay que listarla explícita o sus filas
+                # sobreviven entre tests y chocan por clave_asignatura unique.
+                "TRUNCATE personal, periodo_semestral, ciclo_escolar, plantel, asignatura "
                 "RESTART IDENTITY CASCADE"
             )
         )
