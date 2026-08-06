@@ -36,7 +36,7 @@ aprobado/reprobado).
 |---|---|
 | Entidades, tipos de campo, nulabilidad, sensibilidad de datos | `docs/data_dictionary/mvp.md` |
 | Quién puede hacer qué (CRUD por rol, scope, campos ocultos) | `docs/rbac/matriz-rbac-mvp.md` |
-| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-006.md` (ver resumen abajo) |
+| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-007.md` (ver resumen abajo) |
 | El DDL real, ya validado en Postgres 16 (tablas, RLS, funciones helper) | `db/ddl_mvp.sql` |
 | Cómo se traduce ese DDL a Alembic | `app/db/migrations/versions/7460fa835be8_initial_schema_from_ddl_mvp.py` |
 | Cómo levantar todo local (roles, migración automática, /health) | `docker-compose.yml` + `docs/decisions/ADR-006.md` |
@@ -53,6 +53,7 @@ aprobado/reprobado).
 - **ADR-004**: `directivo`/`admin` sí pueden corregir calificaciones ya capturadas por un docente (auditoría debe distinguir captura vs. corrección).
 - **ADR-005**: `calificacion_final` y `promedio_actual` se calculan en el service de FastAPI, no en trigger ni vista de Postgres.
 - **ADR-006**: separación de roles de conexión a Postgres (ver siguiente sección) — el más relevante para cualquier trabajo de infraestructura/backend.
+- **ADR-007**: `fn_login_lookup` (`SECURITY DEFINER`) — excepción acotada a RLS de `Personal` para resolver el login, ya que antes de emitir el JWT no hay `SET app.current_rol`/`app.current_personal_id` que RLS pueda usar.
 
 ## Roles de conexión a Postgres (ADR-006) — regla dura
 
