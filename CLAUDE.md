@@ -31,9 +31,11 @@ nuevos, incluyendo 2 de bypass directo de RLS) en Postgres real, local
 (`docker-compose up --build`) — ver `docs/validacion/fase-04-alumnos.md`
 para el detalle completo, incluyendo un gap de RLS encontrado y
 corregido en `expediente_academico_select` (tenía `USING(true)`,
-contradecía ADR-001). CI de GitHub Actions sigue pendiente de
-confirmación por la falla de dispatch documentada en
-`docs/validacion/ci-dispatch-outage-2026-08-06.md` — no bloqueante.
+contradecía ADR-001). CI confirmado en verde: el commit de cierre de
+esta fase (`5300b44`) tiene run propio,
+[`31133057823`](https://github.com/rxhdf/Sistema-integral-de-gestion-escolar/actions/runs/31133057823),
+success — ver el cierre del outage de dispatch en
+`docs/validacion/ci-dispatch-outage-2026-08-06.md`.
 
 **Fase 5 (calificaciones y auditoría: `Calificacion`,
 `Auditoria_Calificacion`) cerrada y confirmada.** Evidencia real: **135
@@ -51,8 +53,11 @@ patrón que ADR-007); la regla de "parciales disponibles" de ADR-005; el
 verificación de que `Auditoria_Calificacion` es append-only a nivel de
 API y de RLS para los 3 roles, incluido `admin`. El detalle
 turno-por-turno de cómo se llegó ahí queda en
-`docs/validacion/fase-05-control-escolar.md`. CI de GitHub Actions sigue
-pendiente por la falla de dispatch ya documentada — no bloqueante.
+`docs/validacion/fase-05-control-escolar.md`. **CI confirmado en verde**:
+[`31137042423`](https://github.com/rxhdf/Sistema-integral-de-gestion-escolar/actions/runs/31137042423)
+(commit `8d77d13`, HEAD actual) — 135 passed en el runner de GitHub,
+idéntico al resultado local. Ver cierre completo del outage de dispatch
+en `docs/validacion/ci-dispatch-outage-2026-08-06.md`.
 
 **Con Fase 5 cerrada, todas las entidades del MVP (ADR-002) están
 implementadas** (`Plantel`, `Ciclo_Escolar`, `Periodo_Semestral`,
@@ -79,7 +84,7 @@ usuario: cerrar pendientes sueltos (ver abajo) o pasar a otra capa
 | Cierre y evidencia de Fase 4 (Alumno/Expediente_Academico) + gap de RLS corregido | `docs/validacion/fase-04-alumnos.md` |
 | Cierre consolidado y definitivo de Fase 5 (Calificacion/Auditoria_Calificacion) | `docs/validacion/fase-05-calificaciones.md` |
 | Historial turno-por-turno de cómo se llegó al cierre de Fase 5 (gaps de RLS según se fueron encontrando) | `docs/validacion/fase-05-control-escolar.md` |
-| Falla de dispatch de GitHub Actions (commits sin CI confirmado) | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
+| Outage de dispatch de GitHub Actions del 2026-08-06 — RESUELTO, cierre con evidencia | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
@@ -113,11 +118,11 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- 135 tests pasando localmente contra Postgres real (ver
-  `docs/validacion/fase-05-calificaciones.md` para el desglose); CI de
-  GitHub Actions pendiente de confirmación por causa externa (ver
-  `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no por falla del
-  código.
+- Ninguno bloqueando — 135 tests pasando tanto local (Postgres real,
+  ver `docs/validacion/fase-05-calificaciones.md`) como en CI de GitHub
+  Actions, confirmado en verde sin discrepancias
+  (`docs/validacion/ci-dispatch-outage-2026-08-06.md`, cerrado
+  2026-08-07).
 - `POST /calificacion` con `id_grupo_asig` ajeno ahora devuelve `403`
   limpio (`GrupoAsignaturaAjenoError`), no un `500` sin traducir.
   `PUT /calificacion/{id}` se mantiene en `404` (no `403`) para un
