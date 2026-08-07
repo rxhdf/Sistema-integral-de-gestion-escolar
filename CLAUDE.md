@@ -35,10 +35,26 @@ contradecía ADR-001). CI de GitHub Actions sigue pendiente de
 confirmación por la falla de dispatch documentada en
 `docs/validacion/ci-dispatch-outage-2026-08-06.md` — no bloqueante.
 
-**Próximo paso: Fase 5** — control escolar (`Calificacion`,
-`Auditoria_Calificacion`). Antes de arrancar, revisar las preguntas de
-negocio sin resolver en "Pendientes abiertos" abajo (2 docentes por
-`Grupo_Asignatura`, umbral de aprobado/reprobado).
+**Fase 5 (control escolar: `Calificacion`, `Auditoria_Calificacion`)
+cerrada y confirmada.** Evidencia real: 114 tests pasando (95 previos +
+19 nuevos) en Postgres real, local (`docker-compose up --build`) — ver
+`docs/validacion/fase-05-control-escolar.md` para el detalle completo,
+incluyendo **3 gaps de RLS** encontrados y corregidos antes/durante la
+implementación (uno de diseño, `auditoria_calificacion_insert` con
+`WITH CHECK(true)`; dos que solo aparecieron al ejercer el flujo real
+como docente: `RETURNING` vs. política SELECT de auditoría, y
+`promedio_actual` bloqueado por `expediente_academico_write` — resuelto
+con `fn_actualizar_promedio_actual`, SECURITY DEFINER acotada a una sola
+columna derivada, mismo patrón que ADR-007). CI de GitHub Actions sigue
+pendiente por la falla de dispatch ya documentada — no bloqueante.
+
+**Con Fase 5 cerrada, todas las entidades del MVP (ADR-002) están
+implementadas** (`Plantel`, `Ciclo_Escolar`, `Periodo_Semestral`,
+`Personal`, `Grupo`, `Asignatura`, `Grupo_Asignatura`, `Alumno`,
+`Expediente_Academico`, `Calificacion`, `Auditoria_Calificacion`). No hay
+una "Fase 6" planeada todavía — el siguiente paso es decisión del
+usuario: cerrar pendientes sueltos (ver abajo) o pasar a otra capa
+(frontend, deploy, etc.).
 
 ## Qué leer para qué (no releer todo por defecto)
 
@@ -55,6 +71,7 @@ negocio sin resolver en "Pendientes abiertos" abajo (2 docentes por
 | Cierre y evidencia de Fase 2 (organizacional/personal/Auth) | `docs/validacion/fase-02-organizacional-personal-auth.md` |
 | Cierre y evidencia de Fase 3 (académico: Grupo/Asignatura/Grupo_Asignatura) | `docs/validacion/fase-03-academico.md` |
 | Cierre y evidencia de Fase 4 (Alumno/Expediente_Academico) + gap de RLS corregido | `docs/validacion/fase-04-alumnos.md` |
+| Cierre y evidencia de Fase 5 (Calificacion/Auditoria_Calificacion) + 3 gaps de RLS corregidos | `docs/validacion/fase-05-control-escolar.md` |
 | Falla de dispatch de GitHub Actions (commits sin CI confirmado) | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
@@ -89,15 +106,20 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- Ninguno bloqueando el arranque de Fase 5 — 95 tests pasando localmente
-  contra Postgres real; CI de GitHub Actions pendiente de confirmación
-  por causa externa (ver `docs/validacion/ci-dispatch-outage-2026-08-06.md`),
-  no por falla del código.
-- Preguntas de negocio sin resolver, no bloquean Fase 5 pero sí
-  `control_escolar` específicamente: si `Grupo_Asignatura` admite 2
+- 114 tests pasando localmente contra Postgres real; CI de GitHub Actions
+  pendiente de confirmación por causa externa (ver
+  `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no por falla del
+  código.
+- Preguntas de negocio sin resolver: si `Grupo_Asignatura` admite 2
   docentes por materia/grupo/período (validar con plantel piloto — el
   `UNIQUE` actual en `db/ddl_mvp.sql` asume uno solo), y el umbral real de
-  aprobado/reprobado en `Calificacion` (asumido `>=6`, sin confirmar).
+  aprobado/reprobado en `Calificacion` (asumido `>=6`, implementado así
+  en `app/domains/control_escolar/service.py`, sin confirmar con el
+  negocio).
+- Regla de "faltantes" en `calificacion_final` (ADR-005 la dejaba
+  abierta): se definió en Fase 5 que los 3 parciales deben estar
+  presentes para calcularla — revisar si el negocio prefiere promediar
+  con datos incompletos.
 - `PUT /plantel` (actualizar datos del plantel) no tiene endpoint todavía
   — la matriz RBAC ya otorga `U` a directivo/admin, pero no hay necesidad
   real de editarlo vía API todavía. No confundir con `POST /plantel`, que

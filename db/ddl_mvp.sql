@@ -394,11 +394,21 @@ CREATE POLICY auditoria_calificacion_select ON auditoria_calificacion
     FOR SELECT
     USING (app_current_rol() IN ('directivo', 'admin'));
 
+-- WITH CHECK(true) original permitía que cualquier sesión autenticada
+-- (docente incluido) insertara una fila de auditoría suplantando a
+-- cualquier id_personal_capturo/modifico -- el mismo patrón "el service
+-- filtra pero RLS no" corregido en expediente_academico (Fase 4). El
+-- control de QUÉ transición de calificacion amerita el registro sigue
+-- viviendo en el service (ADR-005); esto solo impide que alguien pueda
+-- mentir sobre QUIÉN hizo la acción.
 CREATE POLICY auditoria_calificacion_insert ON auditoria_calificacion
     FOR INSERT
-    WITH CHECK (true); -- el service backend inserta siempre; el control
-                        -- real de quién puede disparar una inserción vive
-                        -- en la lógica de aplicación, no en RLS.
+    WITH CHECK (
+        CASE accion
+            WHEN 'captura'    THEN id_personal_capturo  = app_current_personal_id()
+            WHEN 'correccion' THEN id_personal_modifico = app_current_personal_id()
+        END
+    );
 
 -- ---------------------------------------------------------------------
 -- Resto de tablas (PLANTEL, CICLO_ESCOLAR, PERIODO_SEMESTRAL, GRUPO,
@@ -439,3 +449,32 @@ $$;
 -- se revoca y se otorga explícitamente solo a sige_app (ADR-007).
 REVOKE ALL ON FUNCTION fn_login_lookup(VARCHAR) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fn_login_lookup(VARCHAR) TO sige_app;
+
+-- =====================================================================
+-- RECALCULO DE PROMEDIO_ACTUAL — ADR-005, gap encontrado en Fase 5
+-- Excepción puntual y acotada a RLS de expediente_academico, mismo
+-- patrón que ADR-007: expediente_academico_write restringe UPDATE a
+-- directivo/admin (Nivel 1 de la matriz: docente solo tiene R sobre
+-- Expediente_Academico) -- correcto para los campos que un humano edita
+-- a mano. Pero ADR-005 exige que el service recalcule promedio_actual
+-- automáticamente en CADA captura/corrección de Calificacion, y la más
+-- común es un docente capturando su propia calificación -- ese docente
+-- no tiene ni debe tener permiso para editar Expediente_Academico en
+-- general. Esta función toca EXCLUSIVAMENTE promedio_actual (columna
+-- derivada, calculada en Python por ADR-005, nunca escrita a mano por
+-- ningún rol vía API) -- no abre una vía para modificar
+-- situacion_academica, escuela_procedencia ni ningún otro campo.
+-- =====================================================================
+CREATE OR REPLACE FUNCTION fn_actualizar_promedio_actual(p_id_alumno INT, p_promedio NUMERIC)
+RETURNS VOID
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE sql
+AS $$
+    UPDATE expediente_academico
+    SET promedio_actual = p_promedio
+    WHERE id_alumno = p_id_alumno;
+$$;
+
+REVOKE ALL ON FUNCTION fn_actualizar_promedio_actual(INT, NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_actualizar_promedio_actual(INT, NUMERIC) TO sige_app;
