@@ -172,3 +172,36 @@ corregidos con evidencia real antes y durante la implementación (dos de
 ellos solo visibles ejerciendo el flujo con sesión de docente, no con
 análisis estático); 114 tests pasando, incluyendo bypass directo de la
 capa de servicio para el fix de auditoría. **Fase 5 formalmente cerrada.**
+
+## Actualización — regla de faltantes + gap de POST sin traducir (2026-08-06)
+
+Dos cambios posteriores al cierre inicial:
+
+1. **Regla de faltantes de `calificacion_final` corregida**: la primera
+   versión exigía los 3 parciales para calcular un promedio; ADR-005
+   dejaba esa regla abierta, y el criterio correcto es promediar sobre
+   los parciales **disponibles** — `calificacion_final` solo queda
+   `NULL`/`pendiente` si ninguno de los 3 se ha capturado. 14 tests
+   unitarios nuevos en `tests/test_control_escolar_calculo.py` (sin BD,
+   prueban `_calificacion_final`/`_estatus` directo).
+
+2. **Gap encontrado al escribir el test "docente A no puede escribir en
+   `grupo_asignatura` de docente B"**: `POST /calificacion` no traducía
+   el rechazo de `calificacion_insert` (RLS) — un docente enviando un
+   `id_grupo_asig` ajeno producía un `500` sin explicación, no un `403`
+   limpio. Corregido con `GrupoAsignaturaAjenoError`
+   (`app/domains/control_escolar/service.py`), mismo patrón que
+   `DocenteInvalidoError` de Fase 3 (`academico/service.py`): captura
+   `sqlalchemy.exc.ProgrammingError`, hace `rollback()`, y el router la
+   traduce a `403`.
+
+3. **Decisión explícita confirmada con el usuario**: `PUT /calificacion/{id}`
+   se mantiene en `404` (no `403`) cuando un docente ataca la
+   calificación de otro docente — consistente con el patrón de opacidad
+   RLS ya usado en `alumno`/`expediente_academico`, en vez de agregar una
+   consulta adicional solo para distinguir "no existe" de "existe pero no
+   es tuya".
+
+**131 passed** (129 previos + 2 nuevos: scope explícito de `GET
+/calificacion` para docente, y el 403 de `grupo_asignatura` ajeno)
+contra Postgres real, local.

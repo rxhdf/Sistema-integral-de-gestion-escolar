@@ -106,11 +106,17 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- 129 tests pasando localmente contra Postgres real (114 previos + 14
-  unitarios de cálculo + 1 de la regla de faltantes actualizada — ver
-  abajo); CI de GitHub Actions pendiente de confirmación por causa
-  externa (ver `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no
-  por falla del código.
+- 131 tests pasando localmente contra Postgres real (114 de Fase 5 + 14
+  unitarios de cálculo + 3 de scope explícito de `Calificacion` — ver
+  `docs/validacion/fase-05-control-escolar.md`); CI de GitHub Actions
+  pendiente de confirmación por causa externa (ver
+  `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no por falla del
+  código.
+- `POST /calificacion` con `id_grupo_asig` ajeno ahora devuelve `403`
+  limpio (`GrupoAsignaturaAjenoError`), no un `500` sin traducir.
+  `PUT /calificacion/{id}` se mantiene en `404` (no `403`) para un
+  docente atacando la calificación de otro — decisión explícita,
+  consistente con la opacidad RLS ya usada en `alumno`.
 - Preguntas de negocio sin resolver: si `Grupo_Asignatura` admite 2
   docentes por materia/grupo/período (validar con plantel piloto — el
   `UNIQUE` actual en `db/ddl_mvp.sql` asume uno solo), y el umbral real de

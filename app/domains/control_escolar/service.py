@@ -1,4 +1,5 @@
 from sqlalchemy import select, text
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.domains.alumnos.models import ExpedienteAcademico
@@ -10,6 +11,14 @@ from app.domains.control_escolar.schemas import CalificacionCreate, Calificacion
 # umbral típico en México, PENDIENTE DE CONFIRMAR con el plantel piloto.
 # No cambiar sin actualizar ambos documentos.
 UMBRAL_APROBADO = 6
+
+
+class GrupoAsignaturaAjenoError(Exception):
+    """id_grupo_asig no pertenece a una grupo_asignatura del docente
+    autenticado -- rechazado por calificacion_insert (RLS, ver
+    db/ddl_mvp.sql), no verificado aparte en Python. Mismo patrón que
+    DocenteInvalidoError en app/domains/academico/service.py: traduce el
+    error crudo de Postgres a un 4xx claro en el router."""
 
 
 def _calificacion_final(p1: float | None, p2: float | None, p3: float | None) -> float | None:
@@ -87,7 +96,13 @@ def create_calificacion(
     fields = data.model_dump()
     fields["calificacion_final"] = final
     fields["estatus"] = _estatus(final)
-    calificacion = repository.create_calificacion(db, fields)
+    try:
+        calificacion = repository.create_calificacion(db, fields)
+    except ProgrammingError as exc:
+        db.rollback()
+        raise GrupoAsignaturaAjenoError(
+            "id_grupo_asig debe pertenecer a una grupo_asignatura del docente autenticado"
+        ) from exc
 
     repository.create_auditoria(
         db,

@@ -25,14 +25,19 @@ def get_calificacion(
 # Matriz RBAC Nivel 1: solo docente tiene Create sobre Calificacion --
 # directivo/admin solo R, U (ADR-004: corrigen, no capturan de cero).
 # calificacion_insert (db/ddl_mvp.sql) ya lo restringe también a nivel de
-# RLS, no solo aquí.
+# RLS: un docente que manda un id_grupo_asig ajeno recibe 403 aquí
+# (GrupoAsignaturaAjenoError traduce el error crudo de RLS), no solo un
+# 500 sin explicación.
 @router.post("/calificacion", response_model=CalificacionOut, status_code=status.HTTP_201_CREATED)
 def post_calificacion(
     payload: CalificacionCreate,
     db: Session = Depends(get_db),
     current: CurrentPersonal = Depends(require_roles("docente")),
 ) -> CalificacionOut:
-    return service.create_calificacion(db, payload, current.id_personal)
+    try:
+        return service.create_calificacion(db, payload, current.id_personal)
+    except service.GrupoAsignaturaAjenoError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
 
 
 # Docente (solo sus grupo_asignatura) y directivo/admin (todo el plantel,

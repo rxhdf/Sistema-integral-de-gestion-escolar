@@ -50,6 +50,45 @@ def test_calificacion_get_allowed_for_admin_200(client, seed):
     assert resp.status_code == 200
 
 
+def test_calificacion_get_scope_docente_sees_only_own_200(client, seed):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente_1 = seed["ids"]["docente1@sige.test"]
+    id_docente_2 = _crear_docente(
+        client, admin_headers, seed, "docente2@sige.test", "CURPDOCENTE0000002", "docente2-pass-1"
+    )
+
+    grupo_asignatura_1, alumno_1 = _docente_alumno_grupo_asig(
+        client, admin_headers, seed, id_docente_1, n=1, nombre_grupo="1A"
+    )
+    grupo_asignatura_2, alumno_2 = _docente_alumno_grupo_asig(
+        client, admin_headers, seed, id_docente_2, n=2, nombre_grupo="1B"
+    )
+
+    docente1_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    calificacion_1 = _post_calificacion(
+        client, docente1_headers, alumno_1["id_alumno"], grupo_asignatura_1["id_grupo_asig"]
+    )
+    docente2_headers = auth_headers(client, "docente2@sige.test", "docente2-pass-1")
+    calificacion_2 = _post_calificacion(
+        client, docente2_headers, alumno_2["id_alumno"], grupo_asignatura_2["id_grupo_asig"]
+    )
+
+    resp = client.get("/calificacion", headers=docente1_headers)
+    assert resp.status_code == 200
+    assert [c["id_calificacion"] for c in resp.json()] == [calificacion_1["id_calificacion"]]
+
+    resp = client.get("/calificacion", headers=docente2_headers)
+    assert resp.status_code == 200
+    assert [c["id_calificacion"] for c in resp.json()] == [calificacion_2["id_calificacion"]]
+
+    resp = client.get("/calificacion", headers=admin_headers)
+    assert resp.status_code == 200
+    assert {c["id_calificacion"] for c in resp.json()} == {
+        calificacion_1["id_calificacion"],
+        calificacion_2["id_calificacion"],
+    }
+
+
 # --- POST /calificacion: solo docente (matriz Nivel 1 + calificacion_insert)
 
 
@@ -94,6 +133,29 @@ def test_calificacion_create_admin_forbidden_403(client, seed):
         json={
             "id_alumno": alumno["id_alumno"],
             "id_grupo_asig": grupo_asignatura["id_grupo_asig"],
+        },
+    )
+    assert resp.status_code == 403
+
+
+def test_calificacion_create_docente_ajeno_grupo_asignatura_403(client, seed):
+    # Docente A no puede capturar una calificación en un grupo_asignatura
+    # que pertenece a docente B (calificacion_insert, RLS + WITH CHECK).
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente_b = _crear_docente(
+        client, admin_headers, seed, "docente2@sige.test", "CURPDOCENTE0000002", "docente2-pass-1"
+    )
+    grupo_asignatura_b, alumno_b = _docente_alumno_grupo_asig(
+        client, admin_headers, seed, id_docente_b, n=2
+    )
+
+    docente_a_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    resp = client.post(
+        "/calificacion",
+        headers=docente_a_headers,
+        json={
+            "id_alumno": alumno_b["id_alumno"],
+            "id_grupo_asig": grupo_asignatura_b["id_grupo_asig"],
         },
     )
     assert resp.status_code == 403
