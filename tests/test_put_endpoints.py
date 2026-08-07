@@ -2,7 +2,8 @@
 cierre de Fase 2: PUT /periodo-semestral (activar/desactivar, respetando
 el índice único parcial que garantiza un solo periodo activo) y
 PUT /personal (editar datos/rol, solo admin, con el guard del único admin
-activo de CLAUDE.md)."""
+activo de CLAUDE.md). También PUT /plantel (matriz RBAC ya otorgaba U a
+directivo/admin, pero no tenía endpoint hasta ahora)."""
 
 from tests.conftest import PASSWORD_ADMIN, PASSWORD_DIRECTIVO, PASSWORD_DOCENTE, auth_headers
 
@@ -150,3 +151,27 @@ def test_personal_put_admin_can_demote_self_if_another_active_admin_exists_200(c
     resp = client.put(f"/personal/{admin_id}", headers=headers, json={"rol": "directivo"})
     assert resp.status_code == 200, resp.text
     assert resp.json()["rol"] == "directivo"
+
+
+# --- PUT /plantel ---------------------------------------------------------
+
+
+def test_plantel_put_docente_forbidden_403(client, seed):
+    headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    resp = client.put("/plantel", headers=headers, json={"telefono": "5555555555"})
+    assert resp.status_code == 403
+
+
+def test_plantel_put_directivo_can_update_200(client, seed):
+    headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    resp = client.put("/plantel", headers=headers, json={"telefono": "5555555555"})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["telefono"] == "5555555555"
+
+
+def test_plantel_put_admin_can_update_200(client, seed):
+    headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    resp = client.put("/plantel", headers=headers, json={"nombre_plantel": "Plantel Nuevo"})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["nombre_plantel"] == "Plantel Nuevo"
+    assert resp.json()["id_plantel"] == seed["id_plantel"]

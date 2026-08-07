@@ -27,6 +27,22 @@ class PlantelOut(PlantelBase):
     estatus: str
 
 
+class PlantelUpdate(BaseModel):
+    """Edición parcial del plantel único del MVP — solo se actualizan los
+    campos enviados (exclude_unset en el service). Sin id_plantel: es el
+    único row (docs/data_dictionary/mvp.md #1), no hay ambigüedad de cuál
+    editar."""
+
+    clave_plantel: str | None = Field(default=None, max_length=20)
+    nombre_plantel: str | None = Field(default=None, max_length=200)
+    municipio: str | None = Field(default=None, max_length=100)
+    estado: str | None = Field(default=None, max_length=80)
+    domicilio: str | None = Field(default=None, max_length=300)
+    telefono: str | None = Field(default=None, max_length=20)
+    email: str | None = Field(default=None, max_length=100)
+    estatus: str | None = Field(default=None, max_length=20)
+
+
 class CicloEscolarBase(BaseModel):
     nombre: str = Field(max_length=20)
     fecha_inicio: date

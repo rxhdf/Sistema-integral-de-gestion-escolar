@@ -28,13 +28,15 @@ gestión de cuentas de `Personal`.
 | `Expediente_Academico` | R (campos limitados, ver Nivel 3) | C, R, U | C, R, U |
 | `Calificacion` | C, R, U (solo de sus `Grupo_Asignatura`) | R, U (puede corregir calificación ya capturada por docente) | R, U (mismo alcance que directivo) |
 
-> **Nota — `Plantel` sin `C`:** ningún rol tiene `Create` sobre `Plantel`,
-> ni siquiera `admin` — el MVP es de un solo plantel
+> **Nota — `Plantel` sin `C`, pero con `U`:** ningún rol tiene `Create`
+> sobre `Plantel`, ni siquiera `admin` — el MVP es de un solo plantel
 > (`docs/data_dictionary/mvp.md` #1), y esa fila se crea vía seed/migración,
 > no vía API. `app/domains/organizacional/router.py` no expone
-> `POST /plantel` intencionalmente (solo `GET`, que cubre la `R` de los
-> tres roles; el `U` de directivo/admin todavía no tiene endpoint, no
-> confundir con que esté bloqueado a propósito como el `C`).
+> `POST /plantel` intencionalmente (bloqueo permanente, no un pendiente).
+> El `U` de directivo/admin sí tiene endpoint: `PUT /plantel` (sin
+> `{id_plantel}` en el path — es la única fila, no hay ambigüedad de cuál
+> editar), sin scope adicional más allá de `require_roles("directivo",
+> "admin")` dado que no hay más de una fila que filtrar.
 
 ---
 

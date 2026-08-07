@@ -143,10 +143,12 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
   los 3 — solo queda `NULL`/`pendiente` si ninguno se ha capturado.
   Revisable si el negocio prefiere exigir los 3 antes de dar un
   resultado.
-- `PUT /plantel` (actualizar datos del plantel) no tiene endpoint todavía
-  — la matriz RBAC ya otorga `U` a directivo/admin, pero no hay necesidad
-  real de editarlo vía API todavía. No confundir con `POST /plantel`, que
-  está bloqueado a propósito (ver nota en `docs/rbac/matriz-rbac-mvp.md`).
+- `PUT /plantel` implementado (2026-08-06): directivo/admin editan la
+  única fila de `Plantel` (sin `{id}` en el path, no hay ambigüedad de
+  cuál — mismo patrón que `PUT /periodo-semestral` y `PUT /personal`).
+  138 tests pasando (135 previos + 3 nuevos: docente 403, directivo 200,
+  admin 200). `POST /plantel` sigue bloqueado a propósito (ver nota en
+  `docs/rbac/matriz-rbac-mvp.md`), eso no cambió.
 
 ## Regla explícita para cualquier cambio de esquema
 

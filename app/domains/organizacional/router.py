@@ -11,6 +11,7 @@ from app.domains.organizacional.schemas import (
     PeriodoSemestralOut,
     PeriodoSemestralUpdate,
     PlantelOut,
+    PlantelUpdate,
 )
 
 router = APIRouter()
@@ -21,13 +22,29 @@ _puede_escribir = require_roles("directivo", "admin")
 # No hay POST /plantel: la matriz RBAC (docs/rbac/matriz-rbac-mvp.md,
 # Nivel 1) no otorga Create de Plantel a ningún rol — es una sola fila en
 # el MVP (docs/data_dictionary/mvp.md #1), no una entidad que se
-# alta/da de baja vía API.
+# alta/da de baja vía API. PUT sí existe (ver más abajo): directivo/admin
+# sí tienen U sobre esa única fila.
 @router.get("/plantel", response_model=list[PlantelOut])
 def get_plantel(
     db: Session = Depends(get_db),
     _current=Depends(get_current_personal),
 ) -> list[PlantelOut]:
     return service.list_plantel(db)
+
+
+# Sin {id_plantel} en el path: es la única fila del MVP, no hay
+# ambigüedad de cuál plantel editar (mismo razonamiento que GET /plantel
+# devolviendo la lista de un solo elemento en vez de filtrar por id).
+@router.put("/plantel", response_model=PlantelOut)
+def put_plantel(
+    payload: PlantelUpdate,
+    db: Session = Depends(get_db),
+    _current=Depends(_puede_escribir),
+) -> PlantelOut:
+    plantel = service.update_plantel(db, payload)
+    if plantel is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Plantel no encontrado")
+    return plantel
 
 
 @router.get("/ciclo-escolar", response_model=list[CicloEscolarOut])

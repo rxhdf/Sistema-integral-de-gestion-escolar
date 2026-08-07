@@ -8,6 +8,18 @@ def list_plantel(db: Session) -> list[Plantel]:
     return list(db.scalars(select(Plantel)))
 
 
+def get_plantel(db: Session) -> Plantel | None:
+    return db.scalars(select(Plantel)).first()
+
+
+def update_plantel(db: Session, plantel: Plantel, fields: dict) -> Plantel:
+    for key, value in fields.items():
+        setattr(plantel, key, value)
+    db.flush()
+    db.refresh(plantel)
+    return plantel
+
+
 def list_ciclo_escolar(db: Session) -> list[CicloEscolar]:
     return list(db.scalars(select(CicloEscolar)))
 
