@@ -106,20 +106,22 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- 114 tests pasando localmente contra Postgres real; CI de GitHub Actions
-  pendiente de confirmación por causa externa (ver
-  `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no por falla del
-  código.
+- 129 tests pasando localmente contra Postgres real (114 previos + 14
+  unitarios de cálculo + 1 de la regla de faltantes actualizada — ver
+  abajo); CI de GitHub Actions pendiente de confirmación por causa
+  externa (ver `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no
+  por falla del código.
 - Preguntas de negocio sin resolver: si `Grupo_Asignatura` admite 2
   docentes por materia/grupo/período (validar con plantel piloto — el
   `UNIQUE` actual en `db/ddl_mvp.sql` asume uno solo), y el umbral real de
-  aprobado/reprobado en `Calificacion` (asumido `>=6`, implementado así
-  en `app/domains/control_escolar/service.py`, sin confirmar con el
-  negocio).
+  aprobado/reprobado en `Calificacion` (asumido `>=6`,
+  `app/domains/control_escolar/service.py::UMBRAL_APROBADO`, sin
+  confirmar con el negocio — ver `docs/data_dictionary/mvp.md` #3).
 - Regla de "faltantes" en `calificacion_final` (ADR-005 la dejaba
-  abierta): se definió en Fase 5 que los 3 parciales deben estar
-  presentes para calcularla — revisar si el negocio prefiere promediar
-  con datos incompletos.
+  abierta): se promedia sobre los parciales **disponibles**, no exige
+  los 3 — solo queda `NULL`/`pendiente` si ninguno se ha capturado.
+  Revisable si el negocio prefiere exigir los 3 antes de dar un
+  resultado.
 - `PUT /plantel` (actualizar datos del plantel) no tiene endpoint todavía
   — la matriz RBAC ya otorga `U` a directivo/admin, pero no hay necesidad
   real de editarlo vía API todavía. No confundir con `POST /plantel`, que

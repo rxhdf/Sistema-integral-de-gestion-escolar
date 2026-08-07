@@ -93,13 +93,15 @@ Dominio `app/domains/control_escolar/` completo:
   `PUT` abierto a los 3 roles, con el scope real resuelto por RLS
   (`docente` fuera de su `grupo_asignatura` recibe 404, no 403 — la fila
   es invisible, mismo patrón de opacidad ya usado en `alumnos`).
-- **ADR-005**: `calificacion_final` = promedio de los 3 parciales,
-  **solo si los 3 están presentes** — si falta uno, quirmilla
-  `calificacion_final = NULL` y `estatus = 'pendiente'` (regla de
-  faltantes que ADR-005 dejaba abierta; se resuelve así, documentado
-  aquí). `estatus` = `aprobado` si `calificacion_final >= 6`, si no
-  `reprobado` — umbral **asumido, sin confirmar** (mismo pendiente ya
-  marcado en `CLAUDE.md`). `Expediente_Academico.promedio_actual` se
+- **ADR-005**: `calificacion_final` = promedio de los **parciales
+  disponibles** (no exige los 3) — `calificacion_final = NULL` y
+  `estatus = 'pendiente'` solo cuando ninguno de los 3 se ha capturado
+  todavía (regla de faltantes que ADR-005 dejaba abierta; corregida a
+  esta versión tras revisión — la primera implementación exigía los 3,
+  ver historial de este documento). `estatus` = `aprobado` si
+  `calificacion_final >= 6`, si no `reprobado` — umbral **asumido, sin
+  confirmar** (`docs/data_dictionary/mvp.md` #3, mismo pendiente marcado
+  en `CLAUDE.md`). `Expediente_Academico.promedio_actual` se
   recalcula como promedio de las `calificacion_final` no nulas del
   alumno, en cada captura/corrección.
 - **ADR-004**: cada captura genera `Auditoria_Calificacion` con
@@ -153,9 +155,11 @@ completo como el rol con menos permisos, no solo como `admin`.
 
 - **Umbral de aprobado/reprobado**: sigue asumido `>=6`, sin confirmar
   con plantel piloto (`CLAUDE.md`).
-- **Regla de faltantes de `calificacion_final`**: se definió aquí (los 3
-  parciales deben estar presentes) porque ADR-005 la dejaba abierta —
-  revisable si el negocio pide promediar con datos incompletos.
+- **Regla de faltantes de `calificacion_final`**: se definió aquí porque
+  ADR-005 la dejaba abierta — se promedia sobre los parciales
+  disponibles (no exige los 3); solo queda `NULL`/`pendiente` si ninguno
+  se ha capturado. Revisable si el negocio prefiere exigir los 3 antes
+  de dar un resultado.
 - **2 docentes por `Grupo_Asignatura`**: sigue sin resolver, no
   específico de esta fase.
 - **`motivo_correccion` en `Auditoria_Calificacion`**: descartado a

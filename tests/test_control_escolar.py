@@ -102,7 +102,21 @@ def test_calificacion_create_admin_forbidden_403(client, seed):
 # --- ADR-005: cálculo de calificacion_final / estatus ---------------------
 
 
-def test_calificacion_final_pendiente_with_missing_parcial(client, seed):
+def test_calificacion_final_pendiente_when_no_parciales_captured(client, seed):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente = seed["ids"]["docente1@sige.test"]
+    grupo_asignatura, alumno = _docente_alumno_grupo_asig(client, admin_headers, seed, id_docente)
+
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    calificacion = _post_calificacion(
+        client, docente_headers, alumno["id_alumno"], grupo_asignatura["id_grupo_asig"]
+    )
+    assert calificacion["calificacion_final"] is None
+    assert calificacion["estatus"] == "pendiente"
+
+
+def test_calificacion_final_averages_only_captured_parciales(client, seed):
+    # ADR-005: promedia sobre los parciales disponibles, no exige los 3.
     admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
     id_docente = seed["ids"]["docente1@sige.test"]
     grupo_asignatura, alumno = _docente_alumno_grupo_asig(client, admin_headers, seed, id_docente)
@@ -116,8 +130,8 @@ def test_calificacion_final_pendiente_with_missing_parcial(client, seed):
         parcial_1=8,
         parcial_2=7,
     )
-    assert calificacion["calificacion_final"] is None
-    assert calificacion["estatus"] == "pendiente"
+    assert calificacion["calificacion_final"] == 7.5
+    assert calificacion["estatus"] == "aprobado"
 
 
 def test_calificacion_final_aprobado_with_all_three_parciales(client, seed):

@@ -6,19 +6,21 @@ from app.domains.control_escolar import repository
 from app.domains.control_escolar.models import AuditoriaCalificacion, Calificacion
 from app.domains.control_escolar.schemas import CalificacionCreate, CalificacionUpdate
 
-# ADR-005: umbral pendiente de confirmar con plantel piloto (ver
-# CLAUDE.md, "Pendientes abiertos") -- asumido >=6 hasta entonces.
+# ADR-005 / docs/data_dictionary/mvp.md (#3, "Pendientes abiertos"):
+# umbral típico en México, PENDIENTE DE CONFIRMAR con el plantel piloto.
+# No cambiar sin actualizar ambos documentos.
 UMBRAL_APROBADO = 6
 
 
 def _calificacion_final(p1: float | None, p2: float | None, p3: float | None) -> float | None:
-    # ADR-005 deja la regla de faltantes a la implementación: se asume que
-    # calificacion_final solo existe cuando los 3 parciales están
-    # capturados -- mientras falte uno, la calificación queda 'pendiente'
-    # en vez de promediar datos incompletos.
-    if p1 is None or p2 is None or p3 is None:
+    # ADR-005 deja la regla de faltantes a la implementación: se promedia
+    # sobre los parciales que sí están capturados (no exige los 3) --
+    # calificacion_final solo queda en None (estatus 'pendiente') cuando
+    # ninguno de los tres se ha capturado todavía.
+    parciales = [p for p in (p1, p2, p3) if p is not None]
+    if not parciales:
         return None
-    return round((p1 + p2 + p3) / 3, 1)
+    return round(sum(parciales) / len(parciales), 1)
 
 
 def _estatus(calificacion_final: float | None) -> str:
