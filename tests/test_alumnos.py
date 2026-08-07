@@ -3,11 +3,15 @@
 test_academico.py, contra la matriz RBAC (docs/rbac/matriz-rbac-mvp.md).
 """
 
+from sqlalchemy import text
+
+from app.core.security import authenticate_personal
 from tests.conftest import PASSWORD_ADMIN, PASSWORD_DIRECTIVO, PASSWORD_DOCENTE, auth_headers
 from tests.test_academico import (
     _crear_docente,
     _crear_grupo_asignatura,
 )
+from tests.test_login_rls_e2e import _set_session
 
 CAMPOS_SENSIBLES = {"fecha_nacimiento", "email", "telefono_personal"}
 
@@ -359,3 +363,55 @@ def test_expediente_put_not_found_404(client, seed):
         "/expediente-academico/999999", headers=headers, json={"situacion_academica": "regular"}
     )
     assert resp.status_code == 404
+
+
+# --- Gap encontrado y corregido (docs/validacion/fase-04-alumnos.md):
+# expediente_academico_select tenia USING(true) -- cualquier consulta que
+# no pasara por service.get_expediente (un script, un endpoint nuevo)
+# veia cualquier expediente sin importar el scope del docente. Esta
+# prueba consulta la tabla directo, bypasseando el service por completo,
+# para confirmar que ahora es RLS -- no Python -- quien bloquea.
+
+
+def test_expediente_direct_query_docente_out_of_scope_blocked_by_rls(client, seed, app_db):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    # Alumno sin grupo asignado: ningun docente tiene grupo_asignatura
+    # que lo cubra, queda fuera del scope de cualquier docente.
+    alumno = _post_alumno(client, admin_headers, seed, n=1)
+    client.post(
+        "/expediente-academico",
+        headers=admin_headers,
+        json={"id_alumno": alumno["id_alumno"], "situacion_academica": "regular"},
+    )
+
+    login = authenticate_personal(app_db, "docente1@sige.test", PASSWORD_DOCENTE)
+    assert login is not None
+    _set_session(app_db, login.rol, login.id_personal)
+
+    rows = app_db.execute(
+        text("SELECT id_exp_academico FROM expediente_academico WHERE id_alumno = :id_alumno"),
+        {"id_alumno": alumno["id_alumno"]},
+    ).all()
+    assert rows == [], "RLS debió bloquear la lectura directa fuera de scope"
+
+
+def test_expediente_direct_query_docente_in_scope_allowed_by_rls(client, seed, app_db):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente = seed["ids"]["docente1@sige.test"]
+    id_grupo = _docente_con_grupo(client, admin_headers, seed, id_docente, "1A", "MAT-01")
+    alumno = _post_alumno(client, admin_headers, seed, n=1, id_grupo=id_grupo)
+    client.post(
+        "/expediente-academico",
+        headers=admin_headers,
+        json={"id_alumno": alumno["id_alumno"], "situacion_academica": "regular"},
+    )
+
+    login = authenticate_personal(app_db, "docente1@sige.test", PASSWORD_DOCENTE)
+    assert login is not None
+    _set_session(app_db, login.rol, login.id_personal)
+
+    rows = app_db.execute(
+        text("SELECT id_exp_academico FROM expediente_academico WHERE id_alumno = :id_alumno"),
+        {"id_alumno": alumno["id_alumno"]},
+    ).all()
+    assert len(rows) == 1

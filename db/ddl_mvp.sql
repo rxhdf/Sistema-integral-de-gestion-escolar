@@ -337,11 +337,22 @@ CREATE POLICY calificacion_update ON calificacion
 -- ---------------------------------------------------------------------
 ALTER TABLE expediente_academico ENABLE ROW LEVEL SECURITY;
 
+-- Mismo scope de fila que alumno_select (docente solo ve expedientes de
+-- alumnos en grupos donde tiene grupo_asignatura activa) -- ADR-001 exige
+-- que un docente "nunca tenga ni la posibilidad" de leer datos ajenos vía
+-- RLS, no solo que el service los filtre. El filtro de campo sensible
+-- (Nivel 3 de la matriz) se sigue aplicando en el schema Pydantic; esto
+-- filtra filas, no columnas.
 CREATE POLICY expediente_academico_select ON expediente_academico
     FOR SELECT
-    USING (true); -- todos los roles autenticados leen; el filtro de campo
-                  -- sensible (Nivel 3 de la matriz) se aplica en el schema
-                  -- Pydantic de respuesta, no en RLS de fila.
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_alumno IN (
+            SELECT a.id_alumno FROM alumno a
+            JOIN grupo_asignatura ga ON ga.id_grupo = a.id_grupo
+            WHERE ga.id_docente = app_current_personal_id()
+        )
+    );
 
 CREATE POLICY expediente_academico_write ON expediente_academico
     FOR ALL

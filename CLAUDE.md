@@ -25,10 +25,20 @@ nuevos) en Postgres real, run verde en GitHub Actions (`fase0-gate`,
 commit `50cd272`, run `31127657254`) — ver
 `docs/validacion/fase-03-academico.md` para el detalle completo.
 
-**Próximo paso: Fase 4** — control escolar (`Calificacion`, etc.). Antes
-de arrancar, revisar las preguntas de negocio sin resolver en "Pendientes
-abiertos" abajo (2 docentes por `Grupo_Asignatura`, umbral de
-aprobado/reprobado).
+**Fase 4 (Alumnos y Expedientes: `Alumno`, `Expediente_Academico`)
+cerrada y confirmada.** Evidencia real: 95 tests pasando (68 previos + 27
+nuevos, incluyendo 2 de bypass directo de RLS) en Postgres real, local
+(`docker-compose up --build`) — ver `docs/validacion/fase-04-alumnos.md`
+para el detalle completo, incluyendo un gap de RLS encontrado y
+corregido en `expediente_academico_select` (tenía `USING(true)`,
+contradecía ADR-001). CI de GitHub Actions sigue pendiente de
+confirmación por la falla de dispatch documentada en
+`docs/validacion/ci-dispatch-outage-2026-08-06.md` — no bloqueante.
+
+**Próximo paso: Fase 5** — control escolar (`Calificacion`,
+`Auditoria_Calificacion`). Antes de arrancar, revisar las preguntas de
+negocio sin resolver en "Pendientes abiertos" abajo (2 docentes por
+`Grupo_Asignatura`, umbral de aprobado/reprobado).
 
 ## Qué leer para qué (no releer todo por defecto)
 
@@ -44,6 +54,8 @@ aprobado/reprobado).
 | Cierre y evidencia del gate de Fase 0 | `docs/validacion/fase-0-cierre.md` |
 | Cierre y evidencia de Fase 2 (organizacional/personal/Auth) | `docs/validacion/fase-02-organizacional-personal-auth.md` |
 | Cierre y evidencia de Fase 3 (académico: Grupo/Asignatura/Grupo_Asignatura) | `docs/validacion/fase-03-academico.md` |
+| Cierre y evidencia de Fase 4 (Alumno/Expediente_Academico) + gap de RLS corregido | `docs/validacion/fase-04-alumnos.md` |
+| Falla de dispatch de GitHub Actions (commits sin CI confirmado) | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
@@ -77,9 +89,11 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- Ninguno bloqueando el arranque de Fase 4 — CI verde confirmado (68
-  tests), repo local sincronizado con `origin/main`.
-- Preguntas de negocio sin resolver, no bloquean Fase 4 pero sí
+- Ninguno bloqueando el arranque de Fase 5 — 95 tests pasando localmente
+  contra Postgres real; CI de GitHub Actions pendiente de confirmación
+  por causa externa (ver `docs/validacion/ci-dispatch-outage-2026-08-06.md`),
+  no por falla del código.
+- Preguntas de negocio sin resolver, no bloquean Fase 5 pero sí
   `control_escolar` específicamente: si `Grupo_Asignatura` admite 2
   docentes por materia/grupo/período (validar con plantel piloto — el
   `UNIQUE` actual en `db/ddl_mvp.sql` asume uno solo), y el umbral real de
