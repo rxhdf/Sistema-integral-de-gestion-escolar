@@ -35,17 +35,23 @@ contradecía ADR-001). CI de GitHub Actions sigue pendiente de
 confirmación por la falla de dispatch documentada en
 `docs/validacion/ci-dispatch-outage-2026-08-06.md` — no bloqueante.
 
-**Fase 5 (control escolar: `Calificacion`, `Auditoria_Calificacion`)
-cerrada y confirmada.** Evidencia real: 114 tests pasando (95 previos +
-19 nuevos) en Postgres real, local (`docker-compose up --build`) — ver
-`docs/validacion/fase-05-control-escolar.md` para el detalle completo,
-incluyendo **3 gaps de RLS** encontrados y corregidos antes/durante la
-implementación (uno de diseño, `auditoria_calificacion_insert` con
-`WITH CHECK(true)`; dos que solo aparecieron al ejercer el flujo real
-como docente: `RETURNING` vs. política SELECT de auditoría, y
-`promedio_actual` bloqueado por `expediente_academico_write` — resuelto
-con `fn_actualizar_promedio_actual`, SECURITY DEFINER acotada a una sola
-columna derivada, mismo patrón que ADR-007). CI de GitHub Actions sigue
+**Fase 5 (calificaciones y auditoría: `Calificacion`,
+`Auditoria_Calificacion`) cerrada y confirmada.** Evidencia real: **135
+tests pasando** contra Postgres real, local (`docker-compose up`) — ver
+`docs/validacion/fase-05-calificaciones.md` para el cierre consolidado
+(mismo formato que las fases anteriores), incluyendo: RLS auditada
+explícitamente *antes* de construir nada (1 gap encontrado y corregido
+de inmediato, `auditoria_calificacion_insert` con `WITH CHECK(true)`); 2
+gaps adicionales encontrados solo al ejercer el flujo real como docente,
+no visibles en el análisis estático (`RETURNING` vs. política SELECT de
+auditoría; `promedio_actual` bloqueado por `expediente_academico_write`,
+resuelto con `fn_actualizar_promedio_actual`, SECURITY DEFINER, mismo
+patrón que ADR-007); la regla de "parciales disponibles" de ADR-005; el
+403 limpio en `POST /calificacion` para `grupo_asignatura` ajeno; y la
+verificación de que `Auditoria_Calificacion` es append-only a nivel de
+API y de RLS para los 3 roles, incluido `admin`. El detalle
+turno-por-turno de cómo se llegó ahí queda en
+`docs/validacion/fase-05-control-escolar.md`. CI de GitHub Actions sigue
 pendiente por la falla de dispatch ya documentada — no bloqueante.
 
 **Con Fase 5 cerrada, todas las entidades del MVP (ADR-002) están
@@ -71,7 +77,8 @@ usuario: cerrar pendientes sueltos (ver abajo) o pasar a otra capa
 | Cierre y evidencia de Fase 2 (organizacional/personal/Auth) | `docs/validacion/fase-02-organizacional-personal-auth.md` |
 | Cierre y evidencia de Fase 3 (académico: Grupo/Asignatura/Grupo_Asignatura) | `docs/validacion/fase-03-academico.md` |
 | Cierre y evidencia de Fase 4 (Alumno/Expediente_Academico) + gap de RLS corregido | `docs/validacion/fase-04-alumnos.md` |
-| Cierre y evidencia de Fase 5 (Calificacion/Auditoria_Calificacion) + 3 gaps de RLS corregidos | `docs/validacion/fase-05-control-escolar.md` |
+| Cierre consolidado y definitivo de Fase 5 (Calificacion/Auditoria_Calificacion) | `docs/validacion/fase-05-calificaciones.md` |
+| Historial turno-por-turno de cómo se llegó al cierre de Fase 5 (gaps de RLS según se fueron encontrando) | `docs/validacion/fase-05-control-escolar.md` |
 | Falla de dispatch de GitHub Actions (commits sin CI confirmado) | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
@@ -107,7 +114,7 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 ## Pendientes abiertos ahora mismo
 
 - 135 tests pasando localmente contra Postgres real (ver
-  `docs/validacion/fase-05-control-escolar.md` para el desglose); CI de
+  `docs/validacion/fase-05-calificaciones.md` para el desglose); CI de
   GitHub Actions pendiente de confirmación por causa externa (ver
   `docs/validacion/ci-dispatch-outage-2026-08-06.md`), no por falla del
   código.
