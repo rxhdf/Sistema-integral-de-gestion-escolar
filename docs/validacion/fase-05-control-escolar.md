@@ -205,3 +205,31 @@ Dos cambios posteriores al cierre inicial:
 **131 passed** (129 previos + 2 nuevos: scope explícito de `GET
 /calificacion` para docente, y el 403 de `grupo_asignatura` ajeno)
 contra Postgres real, local.
+
+## Actualización — append-only verificado con el mismo rigor de Fase 4 (2026-08-06)
+
+Se re-verificó explícitamente, sin cambios de código (ya estaba bien
+desde el diseño original de la tabla):
+
+- **Sin endpoint `PUT`/`DELETE`** para `auditoria_calificacion` en
+  `app/domains/control_escolar/router.py` — solo `GET`. Confirmado con
+  `test_auditoria_calificacion_put_does_not_exist_405` /
+  `..._delete_does_not_exist_405` (mismo patrón que
+  `test_plantel_post_does_not_exist_405`): `405`, no `404` ni `500`.
+- **Sin política RLS de `UPDATE`/`DELETE`** para `auditoria_calificacion`
+  en `db/ddl_mvp.sql` — solo `auditoria_calificacion_select` y
+  `..._insert`. Sin política para un comando, Postgres deniega por
+  defecto: cualquier `UPDATE`/`DELETE` directo afecta **0 filas**, para
+  cualquier rol, **incluido `admin`** (que no es superusuario ni owner —
+  `sige_app` es `NOSUPERUSER`, ADR-006). Verificado empíricamente por
+  `psql` antes de escribir el test, y luego con
+  `test_auditoria_update_direct_blocked_for_all_roles` /
+  `..._delete_direct_blocked_for_all_roles`: iteran los 3 roles con
+  `_set_session` (bypasseando el service, SQL crudo), confirman
+  `rowcount == 0` en cada intento, y que la fila sigue exactamente igual
+  después.
+
+**135 passed** (131 previos + 4 nuevos) contra Postgres real, local.
+Ningún cambio de esquema — este punto ya estaba correctamente diseñado
+desde `db/ddl_mvp.sql` original; lo que faltaba era la cobertura de test
+explícita pedida.

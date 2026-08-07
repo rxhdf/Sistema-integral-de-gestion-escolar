@@ -464,3 +464,117 @@ def test_auditoria_direct_insert_own_identity_allowed_by_rls(client, seed, app_d
         {"id_cal": calificacion["id_calificacion"], "id_propio": login.id_personal},
     )
     app_db.commit()
+
+
+# --- Append-only: ni PUT ni DELETE existen en el router (verificado abajo
+# por inspección de app.main), y auditoria_calificacion no tiene políticas
+# RLS de UPDATE/DELETE en db/ddl_mvp.sql -- sin política, Postgres deniega
+# por defecto (0 filas afectadas, para cualquier rol, sin excepción ni
+# siquiera para admin). Confirmado directo contra la tabla, bypasseando
+# el service, mismo rigor que el gap de Fase 4.
+
+
+def test_auditoria_calificacion_put_does_not_exist_405(client, seed):
+    # Append-only a nivel de API: ni siquiera admin tiene un endpoint para
+    # editar el historial (mismo patrón que test_plantel_post_does_not_exist_405).
+    headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    resp = client.put("/auditoria-calificacion", headers=headers, json={})
+    assert resp.status_code == 405
+
+
+def test_auditoria_calificacion_delete_does_not_exist_405(client, seed):
+    headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    resp = client.delete("/auditoria-calificacion", headers=headers)
+    assert resp.status_code == 405
+
+
+def test_auditoria_update_direct_blocked_for_all_roles(client, seed, app_db):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente = seed["ids"]["docente1@sige.test"]
+    grupo_asignatura, alumno = _docente_alumno_grupo_asig(client, admin_headers, seed, id_docente)
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    calificacion = _post_calificacion(
+        client, docente_headers, alumno["id_alumno"], grupo_asignatura["id_grupo_asig"]
+    )
+    # app_db abre sin SET alguno (fail-closed): hay que autenticar como
+    # admin antes de poder leer la fila para obtener su id.
+    login_inicial = authenticate_personal(app_db, "admin1@sige.test", PASSWORD_ADMIN)
+    assert login_inicial is not None
+    _set_session(app_db, login_inicial.rol, login_inicial.id_personal)
+    id_auditoria = app_db.execute(
+        text("SELECT id_auditoria FROM auditoria_calificacion WHERE id_calificacion = :id"),
+        {"id": calificacion["id_calificacion"]},
+    ).scalar_one()
+    app_db.commit()
+
+    for email, password in (
+        ("docente1@sige.test", PASSWORD_DOCENTE),
+        ("directivo1@sige.test", PASSWORD_DIRECTIVO),
+        ("admin1@sige.test", PASSWORD_ADMIN),
+    ):
+        login = authenticate_personal(app_db, email, password)
+        assert login is not None
+        _set_session(app_db, login.rol, login.id_personal)
+        result = app_db.execute(
+            text(
+                "UPDATE auditoria_calificacion SET accion = 'correccion' "
+                "WHERE id_auditoria = :id"
+            ),
+            {"id": id_auditoria},
+        )
+        assert result.rowcount == 0, f"{email} pudo modificar auditoria_calificacion"
+        app_db.commit()
+
+    # commit() termina la transacción y con ella el SET LOCAL del último
+    # rol del loop (admin) -- hay que re-autenticar antes de esta lectura
+    # final, si no la sesión queda sin rol (NULL) y RLS la niega también.
+    _set_session(app_db, login_inicial.rol, login_inicial.id_personal)
+    accion = app_db.execute(
+        text("SELECT accion FROM auditoria_calificacion WHERE id_auditoria = :id"),
+        {"id": id_auditoria},
+    ).scalar_one()
+    assert accion == "captura"
+
+
+def test_auditoria_delete_direct_blocked_for_all_roles(client, seed, app_db):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente = seed["ids"]["docente1@sige.test"]
+    grupo_asignatura, alumno = _docente_alumno_grupo_asig(client, admin_headers, seed, id_docente)
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    calificacion = _post_calificacion(
+        client, docente_headers, alumno["id_alumno"], grupo_asignatura["id_grupo_asig"]
+    )
+    # app_db abre sin SET alguno (fail-closed): hay que autenticar como
+    # admin antes de poder leer la fila para obtener su id.
+    login_inicial = authenticate_personal(app_db, "admin1@sige.test", PASSWORD_ADMIN)
+    assert login_inicial is not None
+    _set_session(app_db, login_inicial.rol, login_inicial.id_personal)
+    id_auditoria = app_db.execute(
+        text("SELECT id_auditoria FROM auditoria_calificacion WHERE id_calificacion = :id"),
+        {"id": calificacion["id_calificacion"]},
+    ).scalar_one()
+    app_db.commit()
+
+    for email, password in (
+        ("docente1@sige.test", PASSWORD_DOCENTE),
+        ("directivo1@sige.test", PASSWORD_DIRECTIVO),
+        ("admin1@sige.test", PASSWORD_ADMIN),
+    ):
+        login = authenticate_personal(app_db, email, password)
+        assert login is not None
+        _set_session(app_db, login.rol, login.id_personal)
+        result = app_db.execute(
+            text("DELETE FROM auditoria_calificacion WHERE id_auditoria = :id"),
+            {"id": id_auditoria},
+        )
+        assert result.rowcount == 0, f"{email} pudo borrar de auditoria_calificacion"
+        app_db.commit()
+
+    # Mismo motivo que en el test de UPDATE: re-autenticar tras el commit
+    # que cerró la transacción (y el SET LOCAL) del último rol del loop.
+    _set_session(app_db, login_inicial.rol, login_inicial.id_personal)
+    sigue_existiendo = app_db.execute(
+        text("SELECT 1 FROM auditoria_calificacion WHERE id_auditoria = :id"),
+        {"id": id_auditoria},
+    ).first()
+    assert sigue_existiendo is not None
