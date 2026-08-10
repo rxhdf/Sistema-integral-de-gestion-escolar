@@ -214,13 +214,22 @@ CREATE TABLE auditoria_calificacion (
 -- VISTAS CALCULADAS (evitan columnas mantenidas a mano — ver ADR heredado)
 -- =====================================================================
 
-CREATE OR REPLACE VIEW vw_grupo_num_alumnos AS
+-- security_invoker = true (Postgres 15+): sin esto, la vista evalua RLS con
+-- los privilegios del owner (sige_migrator, tambien owner de `alumno`), que
+-- bypassea RLS por ser owner -- una consulta directa a la vista (sin pasar
+-- por el service) veia el conteo real de TODO el plantel sin importar el rol
+-- de sesion. Con security_invoker, la vista hereda alumno_select tal cual
+-- (docente acotado a sus propios grupos; directivo/admin sin restriccion),
+-- sin necesidad de RLS propio en plantel/grupo (ver nota mas abajo).
+CREATE OR REPLACE VIEW vw_grupo_num_alumnos
+WITH (security_invoker = true) AS
 SELECT g.id_grupo, COUNT(a.id_alumno) AS num_alumnos_inscritos
 FROM grupo g
 LEFT JOIN alumno a ON a.id_grupo = g.id_grupo AND a.estatus = 'activo'
 GROUP BY g.id_grupo;
 
-CREATE OR REPLACE VIEW vw_plantel_matricula_total AS
+CREATE OR REPLACE VIEW vw_plantel_matricula_total
+WITH (security_invoker = true) AS
 SELECT p.id_plantel, COUNT(a.id_alumno) AS matricula_total
 FROM plantel p
 LEFT JOIN alumno a ON a.id_plantel = p.id_plantel AND a.estatus = 'activo'
