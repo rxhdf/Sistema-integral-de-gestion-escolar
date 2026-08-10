@@ -106,3 +106,20 @@ Cada dominio contiene: `models.py`, `schemas.py`, `repository.py`,
 `service.py`, `router.py`.
 
 ---
+
+## Desarrollo local
+
+```bash
+docker-compose up -d db
+docker-compose up migrate
+docker-compose up -d app
+python3 db/seed_dev.py   # ver docs/dev/seed-credentials.md para las variables de entorno
+```
+
+Siembra 3 usuarios de prueba (uno por rol) con credenciales de desarrollo
+conocidas, más un grupo/asignatura/alumnos para que el dashboard no
+arranque en ceros. Ver `docs/dev/seed-credentials.md` para las
+credenciales, cómo re-correrlo, y evidencia de que los 3 logins funcionan
+contra el backend real.
+
+---
