@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Portal SIGE - Panel Directivo</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-tertiary-fixed-variant": "#3f484f",
+                        "primary-fixed": "#ffdad5",
+                        "on-background": "#191c1d",
+                        "tertiary-fixed": "#dbe4ed",
+                        "outline": "#936e69",
+                        "on-secondary-fixed": "#181c20",
+                        "tertiary-container": "#69727a",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#930007",
+                        "primary-fixed-dim": "#ffb4aa",
+                        "on-tertiary-fixed": "#141d23",
+                        "primary-container": "#e30613",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#e9bcb6",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-fixed-dim": "#bfc8d0",
+                        "on-primary-fixed": "#410001",
+                        "secondary-fixed": "#e0e3e8",
+                        "tertiary": "#515a61",
+                        "background": "#f8f9fa",
+                        "on-surface": "#191c1d",
+                        "primary": "#b5000b",
+                        "on-tertiary-container": "#f0f7ff",
+                        "inverse-primary": "#ffb4aa",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#c0000c",
+                        "surface-dim": "#d9dadb",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface": "#f8f9fa",
+                        "surface-bright": "#f8f9fa",
+                        "on-secondary-container": "#5f6368",
+                        "secondary": "#5b5f63",
+                        "surface-variant": "#e1e3e4",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#2e3132",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e7e8e9",
+                        "on-secondary-fixed-variant": "#43474c",
+                        "on-primary-container": "#fff5f3",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f3f4f5",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#c3c7cc",
+                        "surface-container": "#edeeef",
+                        "on-surface-variant": "#5e3f3b",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#dde0e5"
+                    },
+                    borderRadius: {
+                        "sm": "0.125rem",
+                        "DEFAULT": "0.25rem",
+                        "md": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "xl": "80px",
+                        "lg": "48px",
+                        "md": "24px",
+                        "margin-desktop": "64px",
+                        "sm": "12px",
+                        "xs": "4px",
+                        "base": "8px"
+                    },
+                    fontFamily: {
+                        "headline-lg-mobile": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "headline-md": ["Public Sans"]
+                    },
+                    fontSize: {
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md">
+<!-- Top Navigation -->
+<header class="bg-surface-container-lowest border-b border-surface-variant flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-16 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<span class="text-headline-md font-headline-md font-bold text-primary">SIGE Portal</span>
+</div>
+<nav class="hidden md:flex items-center gap-6 h-full">
+<a class="h-full flex items-center text-primary border-b-2 border-primary font-bold px-2" href="#">Dashboard</a>
+<a class="h-full flex items-center text-secondary hover:text-primary transition-colors px-2" href="#">Alumnos</a>
+<a class="h-full flex items-center text-secondary hover:text-primary transition-colors px-2" href="#">Personal</a>
+<a class="h-full flex items-center text-secondary hover:text-primary transition-colors px-2" href="#">Académico</a>
+<a class="h-full flex items-center text-secondary hover:text-primary transition-colors px-2" href="#">Calificaciones</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-full font-label-md hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">add</span>
+                Crear nuevo
+            </button>
+<div class="flex items-center gap-2 text-secondary">
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-surface-variant">
+<div class="text-right hidden sm:block">
+<div class="text-label-md font-label-md">Ana García</div>
+<div class="text-label-sm font-label-sm text-secondary">Directivo</div>
+</div>
+<!-- Personal no tiene columna foto (docs/data_dictionary/mvp.md) — avatar de iniciales generado del nombre, no foto real -->
+<div aria-label="Avatar de Ana García" class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed-variant border border-surface-variant flex items-center justify-center text-label-sm font-label-sm font-bold">AG</div>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- Side Navigation -->
+<aside class="hidden lg:flex fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex-col border-r border-surface-variant bg-surface">
+<div class="p-6 border-b border-surface-variant">
+<div class="flex items-center gap-3 mb-4">
+<img alt="Logo COBAO" class="w-10 h-10 object-contain" src="../../../../frontend/src/assets/images/cobao_logo.svg"/>
+<div>
+<h2 class="text-label-md font-label-md font-bold text-on-surface">SIGE Portal</h2>
+<p class="text-label-sm font-label-sm text-secondary">Educación pública de calidad</p>
+</div>
+</div>
+</div>
+<!-- Secciones reales de docs/frontend/00-inventario-interfaces.md — no inventar secciones sin router que las respalde -->
+<nav class="flex-1 overflow-y-auto py-4">
+<a class="flex items-center gap-3 px-6 py-3 text-primary font-bold border-r-4 border-primary bg-surface-container mb-1" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-secondary hover:bg-surface-container-high transition-colors mb-1" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="text-label-md font-label-md">Alumnos</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-secondary hover:bg-surface-container-high transition-colors mb-1" href="#">
+<span class="material-symbols-outlined">assignment_ind</span>
+<span class="text-label-md font-label-md">Personal</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-secondary hover:bg-surface-container-high transition-colors mb-1" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="text-label-md font-label-md">Académico</span>
+</a>
+<a class="flex items-center gap-3 px-6 py-3 text-secondary hover:bg-surface-container-high transition-colors mb-1" href="#">
+<span class="material-symbols-outlined">grading</span>
+<span class="text-label-md font-label-md">Calificaciones</span>
+</a>
+</nav>
+<div class="p-4 border-t border-surface-variant">
+<a class="flex items-center gap-3 px-4 py-2 text-secondary hover:bg-surface-container-high transition-colors rounded-lg mb-1" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="text-label-md font-label-md">Centro de ayuda</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-primary hover:bg-error-container transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-label-md font-label-md">Cerrar sesión</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto lg:ml-64 bg-surface-bright">
+<div class="max-w-7xl mx-auto p-margin-mobile md:p-margin-desktop space-y-lg">
+<!-- Greeting -->
+<section>
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg font-bold text-on-surface">Buen día, Directora García.</h1>
+<p class="text-body-lg font-body-lg text-secondary mt-2">Aquí está el resumen general de la institución para hoy.</p>
+</section>
+<!-- KPI Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-3xl">school</span>
+<span class="bg-surface-container text-secondary text-label-sm font-label-sm px-2 py-1 rounded-full">+2.4%</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-secondary mb-1">Matrícula Activa</p>
+<p class="text-headline-md font-headline-md font-bold text-on-surface">4,285</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-3xl">group</span>
+<span class="bg-surface-container text-secondary text-label-sm font-label-sm px-2 py-1 rounded-full">Estable</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-secondary mb-1">Grupos Activos</p>
+<p class="text-headline-md font-headline-md font-bold text-on-surface">112</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-3xl">badge</span>
+<span class="bg-surface-container text-secondary text-label-sm font-label-sm px-2 py-1 rounded-full">Actualizado</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-secondary mb-1">Personal Activo</p>
+<p class="text-headline-md font-headline-md font-bold text-on-surface">248</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary text-3xl">menu_book</span>
+<span class="bg-surface-container text-secondary text-label-sm font-label-sm px-2 py-1 rounded-full">Semestre A</span>
+</div>
+<div>
+<p class="text-label-md font-label-md text-secondary mb-1">Materias Config.</p>
+<p class="text-headline-md font-headline-md font-bold text-on-surface">86</p>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Quick Access -->
+<section class="lg:col-span-2 space-y-6">
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface border-b border-surface-variant pb-2">Acceso Rápido</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<button class="flex items-center gap-4 p-4 bg-surface-container-lowest border border-surface-variant rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_rgba(181,0,11,1)] transition-all text-left group">
+<div class="p-3 bg-surface-container rounded-full group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">person_search</span>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface">Gestión de alumnos</h3>
+<p class="text-label-sm font-label-sm text-secondary">Altas, bajas y expedientes</p>
+</div>
+</button>
+<button class="flex items-center gap-4 p-4 bg-surface-container-lowest border border-surface-variant rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_rgba(181,0,11,1)] transition-all text-left group">
+<div class="p-3 bg-surface-container rounded-full group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">assignment_ind</span>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface">Gestión de personal</h3>
+<p class="text-label-sm font-label-sm text-secondary">Docentes y administrativos</p>
+</div>
+</button>
+<button class="flex items-center gap-4 p-4 bg-surface-container-lowest border border-surface-variant rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_rgba(181,0,11,1)] transition-all text-left group">
+<div class="p-3 bg-surface-container rounded-full group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">account_tree</span>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface">Estructura académica</h3>
+<p class="text-label-sm font-label-sm text-secondary">Planes de estudio y grupos</p>
+</div>
+</button>
+<button class="flex items-center gap-4 p-4 bg-surface-container-lowest border border-surface-variant rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_rgba(181,0,11,1)] transition-all text-left group">
+<div class="p-3 bg-surface-container rounded-full group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-secondary group-hover:text-primary">grading</span>
+</div>
+<div>
+<h3 class="text-label-md font-label-md font-bold text-on-surface">Calificaciones</h3>
+<p class="text-label-sm font-label-sm text-secondary">Consultar y corregir actas</p>
+</div>
+</button>
+</div>
+</section>
+<!-- Admin Panel -->
+<!-- REACT TODO: renderizar este bloque completo ("Panel Directivo" / "Gestión de cuentas") condicionalmente, solo si rol === 'admin'. En el mockup estático queda visible para revisión, pero no debe llegar a producción visible para directivo/docente. -->
+<section class="space-y-6">
+<h2 class="text-headline-md font-headline-md font-bold text-on-surface border-b border-surface-variant pb-2">Panel Directivo</h2>
+<div class="bg-surface-container-highest p-6 rounded-xl border border-outline-variant relative overflow-hidden">
+<!-- Subtle decorative gradient -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed-dim rounded-full blur-3xl opacity-20 -mr-16 -mt-16 pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4 text-primary">
+<span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+<h3 class="text-body-lg font-body-lg font-bold">Gestión de cuentas</h3>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mb-6">Administre los roles, permisos y accesos del personal operativo del plantel.</p>
+<button class="w-full bg-primary text-on-primary py-3 px-4 rounded-lg font-label-md font-bold hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2">
+                                    Acceder al panel
+                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</body></html>

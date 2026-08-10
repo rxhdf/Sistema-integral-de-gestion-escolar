@@ -64,10 +64,29 @@ Roles abreviados: `D` = docente, `X` = directivo, `A` = admin.
 | 31 | `PUT /calificacion/{id_calificacion}` | Calificacion | D (solo sus grupo_asignatura), X, A | Formulario de corrección |
 | 32 | `GET /auditoria-calificacion` | Auditoria_Calificacion | X, A | Tabla de listado (solo lectura, append-only) |
 
+## `app/domains/dashboard/router.py`
+
+| # | Endpoint(s) | Entidad | Rol(es) | Tipo de interfaz |
+|---|---|---|---|---|
+| 33 | `GET /dashboard/resumen` | Dashboard (agregado, sin tabla propia) | D, X, A | Vista de resumen (KPIs) |
+
 ## Notas de alcance
 
-- 32 endpoints reales, 6 routers (incluye `auth_router` de login).
+- 33 endpoints reales, 7 routers (incluye `auth_router` de login).
 - `GET /alumno` y `GET /expediente-academico/{id_alumno}` devuelven
   payloads distintos según rol (campos ocultos a docente, matriz RBAC
   Nivel 3) — es la misma interfaz de UI, no dos interfaces separadas;
   el filtrado de campos ya ocurre en el backend.
+- `GET /dashboard/resumen` sigue el mismo patrón: un solo endpoint, sin
+  parámetro de "qué resumen pedir" — el rol del JWT decide la forma de
+  la respuesta (`DashboardDirectivoOut` para directivo/admin,
+  `DashboardDocenteOut` para docente). Directivo/admin reciben
+  `matricula_total` (vía `vw_plantel_matricula_total`), `grupos_activos`,
+  `personal_activo`, `asignaturas_configuradas` — todo el plantel (MVP de
+  un solo plantel). Docente recibe `numero_grupos_asignados`,
+  `numero_alumnos_bajo_responsabilidad`, `calificaciones_pendientes` —
+  acotado a su propio scope vía las mismas políticas RLS ya validadas en
+  `grupo_asignatura_select` / `alumno_select` / `calificacion_select`, sin
+  filtro adicional en Python. Sin tabla propia: son agregados calculados
+  sobre entidades existentes, documentados en
+  `app/domains/dashboard/repository.py`.

@@ -118,6 +118,17 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
+- PENDIENTE CRÍTICO - marco legal de protección de datos: el proyecto se
+  definió originalmente bajo LGPDPPSO (sujetos obligados, dado que el
+  COBAO es entidad pública), documentado en SIGE_Contexto_Proyecto.md. En
+  conversación posterior se mencionó "LFDPDD" (posible referencia a la ley
+  de particulares) sin confirmación explícita de cuál aplica realmente.
+  Esto afecta: avisos de privacidad, derechos ARCO, políticas de retención
+  de datos, y cualquier documento legal que el sistema muestre a alumnos/
+  tutores. NO cerrar el proyecto ni pasar a producción sin resolver esto
+  con el área jurídica del COBAO o un especialista en protección de datos
+  del sector público. Ver docs/decisions/ (agregar como futuro ADR una vez
+  resuelto).
 - Ninguno bloqueando — 135 tests pasando tanto local (Postgres real,
   ver `docs/validacion/fase-05-calificaciones.md`) como en CI de GitHub
   Actions, confirmado en verde sin discrepancias

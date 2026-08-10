@@ -8,6 +8,36 @@ llegaron especificados en la solicitud, y coinciden con el alcance de
 entidades ya fijado en el diccionario de datos, así que no hay
 contradicción que resolver.
 
+## Estado de implementación (frontend)
+
+Fichas #1, #3, #4, #5, #6 y #7 del orden global (abajo) ya tienen
+página real en `frontend/src/pages/` y ruta en `App.tsx`:
+`POST /auth/login`, `GET`/`POST /ciclo-escolar`, y
+`GET`/`POST /periodo-semestral` + `PUT /periodo-semestral/{id}`
+(activar/desactivar). Verificado con directivo@ y docente@cobao.edu.mx
+reales, backend real (`docker-compose`), 138 tests de backend + 8 de
+frontend en verde.
+
+**Flujo 1 (setup institucional) NO está formalmente cerrado todavía.**
+`Ciclo_Escolar` y `Periodo_Semestral` (las 5 fichas con criterio
+Bloqueo: #3-#7) sí están cerradas. `Plantel` (fichas #30 y #31 —
+`GET`/`PUT /plantel`) sigue sin página en el frontend (no hay
+`PlantelPage.tsx` ni ruta `/plantel` en `App.tsx`) aunque el backend ya
+las expone completas desde antes. El propio criterio de priorización de
+este documento explica por qué se sintió "ya cerrado": `Plantel` es
+Bloqueo nulo y la frecuencia más baja de las 32 fichas (ver nota al
+final), así que no bloqueaba nada de lo que se acaba de construir — pero
+sigue siendo parte de Flujo 1 y falta por hacer.
+
+Ficha #2 (`GET /personal/me`) tampoco tiene vista propia ("Mi perfil")
+— el endpoint se consume internamente (header, guards de rol) pero no
+hay pantalla dedicada. No bloquea nada corriente abajo, es lectura del
+propio registro.
+
+**Siguiente en el orden global:** ficha **#8, `POST /personal`** (alta
+de personal — `require_roles("admin")`), primera del Flujo 2 que
+todavía no tiene página.
+
 ## Los 3 criterios
 
 - **Bloqueo** — ¿esta pantalla es requisito de acceso/dato para que otra

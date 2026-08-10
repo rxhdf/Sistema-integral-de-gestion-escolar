@@ -43,6 +43,14 @@ exacto; el frontend debe tratarlo como un 500 más (mensaje genérico de
 "algo salió mal", no un error de validación de campo), no inventarle un
 422 que el backend no produce.
 
+**Excepción:** `POST /ciclo-escolar` (ficha #4) y `POST /periodo-semestral`
+(ficha #6) ya no aplican — `app/domains/organizacional/service.py`
+traduce sus constraints (`chk_ciclo_fechas`/`chk_periodo_fechas` → 422;
+`nombre`/`clave_periodo`/`uq_periodo_ciclo_numero` UNIQUE y
+`uq_ciclo_escolar_activo`/`uq_periodo_semestral_activo` → 409) con
+mensaje claro, mismo patrón que `GrupoAsignaturaAjenoError`. El resto de
+las fichas listadas abajo siguen sin traducir (500 crudo).
+
 ---
 
 ### 1. `POST /auth/login` — Login
@@ -117,12 +125,14 @@ exacto; el frontend debe tratarlo como un 500 más (mensaje genérico de
 - **Estados:**
   - Vacío: formulario en blanco.
   - Carga: botón "Guardar" deshabilitado durante el POST.
-  - Error: `401`. `403` (D intentó acceder). `422` validación de
-    Pydantic (fechas mal formadas, `nombre` excede 20 caracteres).
-    `500` — incluye violaciones no traducidas de `chk_ciclo_fechas`
-    (`fecha_fin <= fecha_inicio`), `nombre` UNIQUE, o
-    `uq_ciclo_escolar_activo` si se manda `activo: true` habiendo ya
-    otro ciclo activo (ver Nota transversal).
+  - Error: `401`. `403` (D intentó acceder). `422` — validación de
+    Pydantic (fechas mal formadas, `nombre` excede 20 caracteres) o
+    `chk_ciclo_fechas` (`fecha_fin <= fecha_inicio`), traducido a mensaje
+    claro por el service (`FechasInvalidasError`). `409` — `nombre`
+    UNIQUE duplicado, o `uq_ciclo_escolar_activo` si se manda
+    `activo: true` habiendo ya otro ciclo activo (ver Nota transversal),
+    ambos traducidos a mensaje claro por el service
+    (`ValorDuplicadoError` / `YaExisteActivoError`), ya no un `500` crudo.
 - **Accesibilidad (delta):** el resultado del submit (éxito o error) se
   anuncia por `aria-live="polite"`.
 
@@ -154,12 +164,14 @@ exacto; el frontend debe tratarlo como un 500 más (mensaje genérico de
   - Vacío: formulario en blanco.
   - Carga: botón deshabilitado durante el POST.
   - Error: `401`. `403`. `422` (tipos/formato, `numero_periodo` fuera
-    de `{1,2}`). `500` — `clave_periodo` UNIQUE,
+    de `{1,2}`, o `chk_periodo_fechas`). `409` — `clave_periodo` UNIQUE,
     `uq_periodo_ciclo_numero` (ya existe ese número de periodo para ese
-    ciclo), `chk_periodo_fechas`, o `uq_periodo_semestral_activo` si se
-    manda `activo: true` con otro ya activo (ver Nota transversal —
-    a diferencia de la ficha #7, aquí **no** hay lógica que desactive
-    el otro automáticamente).
+    ciclo), o `uq_periodo_semestral_activo` si se manda `activo: true`
+    con otro ya activo — a diferencia de la ficha #7, aquí **no** hay
+    lógica que desactive el otro automáticamente. Los 4 constraints ya
+    se traducen a mensaje claro por el service
+    (`FechasInvalidasError` / `ValorDuplicadoError` /
+    `YaExisteActivoError`), ya no un `500` crudo.
 - **Accesibilidad (delta):** resultado del submit por
   `aria-live="polite"`.
 

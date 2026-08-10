@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SIGE - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#191c1d",
+                        "on-tertiary-container": "#f0f7ff",
+                        "outline": "#936e69",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#f0f1f2",
+                        "primary-fixed": "#ffdad5",
+                        "surface-container": "#edeeef",
+                        "primary-fixed-dim": "#ffb4aa",
+                        "secondary-fixed-dim": "#c3c7cc",
+                        "inverse-surface": "#2e3132",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#c0000c",
+                        "outline-variant": "#e9bcb6",
+                        "surface-bright": "#f8f9fa",
+                        "surface-dim": "#d9dadb",
+                        "on-surface-variant": "#5e3f3b",
+                        "tertiary-container": "#69727a",
+                        "inverse-primary": "#ffb4aa",
+                        "secondary-fixed": "#e0e3e8",
+                        "surface-container-low": "#f3f4f5",
+                        "tertiary": "#515a61",
+                        "on-secondary-fixed": "#181c20",
+                        "on-tertiary-fixed": "#141d23",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-primary-container": "#fff5f3",
+                        "on-background": "#191c1d",
+                        "primary": "#b5000b",
+                        "surface": "#f8f9fa",
+                        "on-primary": "#ffffff",
+                        "background": "#f8f9fa",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#5f6368",
+                        "surface-variant": "#e1e3e4",
+                        "tertiary-fixed": "#dbe4ed",
+                        "on-primary-fixed-variant": "#930007",
+                        "surface-container-high": "#e7e8e9",
+                        "error": "#ba1a1a",
+                        "primary-container": "#e30613",
+                        "error-container": "#ffdad6",
+                        "secondary": "#5b5f63",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#dde0e5",
+                        "on-primary-fixed": "#410001",
+                        "on-secondary-fixed-variant": "#43474c",
+                        "on-tertiary-fixed-variant": "#3f484f",
+                        "tertiary-fixed-dim": "#bfc8d0",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "sm": "0.125rem",
+                        "DEFAULT": "0.25rem",
+                        "md": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "24px",
+                        "margin-desktop": "64px",
+                        "lg": "48px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "xl": "80px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "display-lg": ["Public Sans"],
+                        "label-sm": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "display-lg": ["56px", { "lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .input-glow:focus-within {
+            box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.2);
+            border-color: #e30613;
+        }
+    </style>
+</head>
+<body class="bg-surface h-full font-body-md text-on-surface antialiased flex flex-col md:flex-row">
+<!-- Left Side: Branding & Info -->
+<div class="hidden md:flex md:w-1/2 lg:w-7/12 bg-surface-container-low flex-col justify-between p-margin-desktop relative overflow-hidden">
+<!-- Abstract Background Decoration (Subtle, professional) -->
+<div class="absolute inset-0 pointer-events-none opacity-5">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,100 C20,80 40,90 60,70 C80,50 100,60 100,60 L100,0 L0,0 Z" fill="#e30613"></path>
+</svg>
+</div>
+<div class="z-10 flex flex-col items-start max-w-2xl">
+<!-- Logo & Title -->
+<div class="flex items-center gap-sm mb-lg">
+<div class="bg-surface p-sm rounded-xl border border-surface-variant shadow-sm w-24 h-24 flex-shrink-0 flex items-center justify-center">
+<img alt="COBAO Logo" class="w-full h-full object-contain" src="../../../frontend/src/assets/images/cobao_logo.svg"/>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">SIGE</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Sistema Integral de Gestión Educativa</p>
+<span class="inline-block mt-xs px-sm py-1 bg-surface-variant text-on-surface font-label-sm text-label-sm rounded-full">Plantel 01 Pueblo Nuevo</span>
+<p class="font-label-md text-label-md text-on-surface-variant mt-xs">Educación pública de calidad</p>
+</div>
+</div>
+<div class="h-px w-full bg-outline-variant/30 mb-lg"></div>
+<!-- Value Propositions -->
+<div class="space-y-md w-full">
+<div class="flex items-start gap-md p-md bg-surface border border-outline-variant/50 rounded-xl hover:bg-surface-bright transition-colors">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined fill text-2xl">folder_shared</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Centraliza expedientes académicos</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Acceso inmediato a la trayectoria estudiantil completa en un entorno seguro y unificado.</p>
+</div>
+</div>
+<div class="flex items-start gap-md p-md bg-surface border border-outline-variant/50 rounded-xl hover:bg-surface-bright transition-colors">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined fill text-2xl">bar_chart</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Digitaliza captura y consulta</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Agiliza el registro de calificaciones y su visibilidad en tiempo real para la comunidad académica.</p>
+</div>
+</div>
+<div class="flex items-start gap-md p-md bg-surface border border-outline-variant/50 rounded-xl hover:bg-surface-bright transition-colors">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined fill text-2xl">admin_panel_settings</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-lg">Acceso basado en roles</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Control de permisos estrictos para directivos, docentes y personal administrativo.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="z-10 mt-lg">
+<p class="font-body-lg text-body-lg italic text-on-surface-variant border-l-4 border-primary pl-md py-sm">
+                "Educación que transforma, futuro que trasciende"
+            </p>
+</div>
+</div>
+<!-- Right Side: Login Form -->
+<div class="w-full md:w-1/2 lg:w-5/12 bg-surface flex flex-col justify-center items-center p-margin-mobile md:p-margin-desktop min-h-screen relative shadow-[-8px_0_24px_rgba(0,0,0,0.02)] z-20">
+<!-- Mobile Logo Header (Hidden on Desktop) -->
+<div class="md:hidden flex flex-col items-center mb-lg w-full">
+<img alt="COBAO Logo" class="w-20 h-20 object-contain mb-sm" src="../../../frontend/src/assets/images/cobao_logo.svg"/>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface text-center">SIGE</h1>
+<p class="font-label-md text-label-md text-on-surface-variant text-center">Sistema Integral de Gestión Educativa</p>
+<span class="inline-block mt-xs px-sm py-1 bg-surface-variant text-on-surface font-label-sm text-label-sm rounded-full">Plantel 01 Pueblo Nuevo</span>
+<p class="font-label-md text-label-md text-on-surface-variant text-center mt-xs">Educación pública de calidad</p>
+</div>
+<div class="w-full max-w-md">
+<div class="mb-lg">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Iniciar Sesión</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Ingresa tus credenciales institucionales para acceder al portal.</p>
+</div>
+<form action="#" class="space-y-md" method="POST">
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface block" for="email">Correo Institucional</label>
+<div class="relative input-glow rounded-md transition-shadow">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">mail</span>
+</div>
+<input class="block w-full pl-xl pr-sm py-sm border border-outline-variant rounded-md bg-surface focus:ring-0 focus:border-primary transition-colors text-on-surface placeholder:text-on-surface-variant/50 font-body-md" id="email" name="email" placeholder="usuario@cobao.edu.mx" required="" type="email"/>
+</div>
+</div>
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface block" for="password">Contraseña</label>
+<div class="relative input-glow rounded-md transition-shadow">
+<div class="absolute inset-y-0 left-0 pl-sm flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<input class="block w-full pl-xl pr-xl py-sm border border-outline-variant rounded-md bg-surface focus:ring-0 focus:border-primary transition-colors text-on-surface placeholder:text-on-surface-variant/50 font-body-md" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-sm flex items-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="visibility-icon">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between mt-sm">
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-outline-variant rounded bg-surface" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block font-label-md text-label-md text-on-surface-variant" for="remember-me">
+                            Recordar usuario
+                        </label>
+</div>
+<div class="text-sm">
+<a class="font-label-md text-label-md text-primary hover:text-primary-fixed-dim transition-colors" href="#">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+</div>
+</div>
+<div class="pt-sm">
+<button class="w-full flex justify-center items-center gap-xs py-sm px-md border border-transparent rounded-md shadow-sm font-label-md text-label-md text-on-primary bg-primary-container hover:bg-on-primary-fixed-variant focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors min-h-[48px]" type="submit">
+                        Iniciar Sesión
+                        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</form>
+<div class="mt-xl pt-md border-t border-outline-variant/30 flex flex-col items-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant text-center mb-xs">¿Necesitas ayuda para ingresar?</p>
+<a class="flex items-center gap-xs font-label-md text-label-md text-on-surface hover:text-primary transition-colors" href="mailto:soporte.sige@cobao.edu.mx">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+                     soporte.sige@cobao.edu.mx
+                 </a>
+</div>
+</div>
+</div>
+<script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const visibilityIcon = document.getElementById('visibility-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                visibilityIcon.textContent = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                visibilityIcon.textContent = 'visibility';
+            }
+        }
+    </script>
+</body></html>
