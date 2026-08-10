@@ -7,6 +7,12 @@ import { PeriodoSemestralListPage } from '@/pages/PeriodoSemestralListPage'
 import { PeriodoSemestralCreatePage } from '@/pages/PeriodoSemestralCreatePage'
 import { PersonalListPage } from '@/pages/PersonalListPage'
 import { PersonalCreatePage } from '@/pages/PersonalCreatePage'
+import { AsignaturaListPage } from '@/pages/AsignaturaListPage'
+import { AsignaturaCreatePage } from '@/pages/AsignaturaCreatePage'
+import { GrupoListPage } from '@/pages/GrupoListPage'
+import { GrupoCreatePage } from '@/pages/GrupoCreatePage'
+import { GrupoAsignaturaListPage } from '@/pages/GrupoAsignaturaListPage'
+import { GrupoAsignaturaCreatePage } from '@/pages/GrupoAsignaturaCreatePage'
 import { CalificacionListPage } from '@/pages/CalificacionListPage'
 import { CalificacionCreatePage } from '@/pages/CalificacionCreatePage'
 import { CalificacionCorrectPage } from '@/pages/CalificacionCorrectPage'
@@ -24,6 +30,12 @@ function App() {
         <Route path="/periodo-semestral/nuevo" element={<PeriodoSemestralCreatePage />} />
         <Route path="/personal" element={<PersonalListPage />} />
         <Route path="/personal/nuevo" element={<PersonalCreatePage />} />
+        <Route path="/asignatura" element={<AsignaturaListPage />} />
+        <Route path="/asignatura/nueva" element={<AsignaturaCreatePage />} />
+        <Route path="/grupo" element={<GrupoListPage />} />
+        <Route path="/grupo/nuevo" element={<GrupoCreatePage />} />
+        <Route path="/grupo-asignatura" element={<GrupoAsignaturaListPage />} />
+        <Route path="/grupo-asignatura/nueva" element={<GrupoAsignaturaCreatePage />} />
         <Route path="/calificacion" element={<CalificacionListPage />} />
         <Route path="/calificacion/nueva" element={<CalificacionCreatePage />} />
         <Route path="/calificacion/:idCalificacion/editar" element={<CalificacionCorrectPage />} />

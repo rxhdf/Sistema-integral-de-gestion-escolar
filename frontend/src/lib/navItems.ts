@@ -33,14 +33,27 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
       href: '/personal',
     })
   }
-  items.push(
-    { icon: 'account_tree', label: 'Académico', active: false },
-    {
-      icon: 'grading',
-      label: 'Calificaciones',
-      active: activeHref === '/calificacion',
-      href: '/calificacion',
-    },
-  )
+  // Académico (Grupo/Asignatura/Grupo_Asignatura): mismo criterio que Ciclo
+  // escolar/Periodo semestral/Personal -- oculto del nav para docente
+  // aunque el backend le permita GET (RBAC Nivel 1: docente solo R),
+  // reusa el patrón "no lo tienta desde la navegación, sí llega por URL".
+  if (esDirectivoOAdmin) {
+    items.push(
+      { icon: 'groups', label: 'Grupos', active: activeHref === '/grupo', href: '/grupo' },
+      { icon: 'menu_book', label: 'Asignaturas', active: activeHref === '/asignatura', href: '/asignatura' },
+      {
+        icon: 'account_tree',
+        label: 'Asignaciones',
+        active: activeHref === '/grupo-asignatura',
+        href: '/grupo-asignatura',
+      },
+    )
+  }
+  items.push({
+    icon: 'grading',
+    label: 'Calificaciones',
+    active: activeHref === '/calificacion',
+    href: '/calificacion',
+  })
   return items
 }
