@@ -38,6 +38,8 @@ def post_calificacion(
         return service.create_calificacion(db, payload, current.id_personal)
     except service.GrupoAsignaturaAjenoError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+    except service.CalificacionYaExisteError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 # Docente (solo sus grupo_asignatura) y directivo/admin (todo el plantel,

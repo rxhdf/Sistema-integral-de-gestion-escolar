@@ -43,7 +43,10 @@ def post_personal(
     db: Session = Depends(get_db),
     _current: CurrentPersonal = Depends(require_roles("admin")),
 ) -> PersonalOut:
-    return service.create_personal(db, payload)
+    try:
+        return service.create_personal(db, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.get("/personal", response_model=list[PersonalOut])

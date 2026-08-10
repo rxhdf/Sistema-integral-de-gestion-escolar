@@ -65,7 +65,12 @@ def post_ciclo_escolar(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> CicloEscolarOut:
-    return service.create_ciclo_escolar(db, payload)
+    try:
+        return service.create_ciclo_escolar(db, payload)
+    except service.FechasInvalidasError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
+    except (service.ValorDuplicadoError, service.YaExisteActivoError) as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.get("/periodo-semestral", response_model=list[PeriodoSemestralOut])
@@ -86,7 +91,12 @@ def post_periodo_semestral(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> PeriodoSemestralOut:
-    return service.create_periodo_semestral(db, payload)
+    try:
+        return service.create_periodo_semestral(db, payload)
+    except service.FechasInvalidasError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
+    except (service.ValorDuplicadoError, service.YaExisteActivoError) as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/periodo-semestral/{id_periodo}", response_model=PeriodoSemestralOut)

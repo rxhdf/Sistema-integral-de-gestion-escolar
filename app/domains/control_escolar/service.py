@@ -1,5 +1,5 @@
 from sqlalchemy import select, text
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.domains.alumnos.models import ExpedienteAcademico
@@ -19,6 +19,14 @@ class GrupoAsignaturaAjenoError(Exception):
     db/ddl_mvp.sql), no verificado aparte en Python. Mismo patrón que
     DocenteInvalidoError en app/domains/academico/service.py: traduce el
     error crudo de Postgres a un 4xx claro en el router."""
+
+
+class CalificacionYaExisteError(Exception):
+    """uq_calificacion_alumno_grupo_asig: ya existe una calificación para
+    ese alumno+grupo_asignatura -- el frontend debe ofrecer "Corregir" en
+    vez de "Capturar" cuando ya hay fila (ficha 22, docs/frontend/02-
+    especificacion-contenido.md), pero el backend rechaza igual si algo
+    se cuela."""
 
 
 def _calificacion_final(p1: float | None, p2: float | None, p3: float | None) -> float | None:
@@ -102,6 +110,14 @@ def create_calificacion(
         db.rollback()
         raise GrupoAsignaturaAjenoError(
             "id_grupo_asig debe pertenecer a una grupo_asignatura del docente autenticado"
+        ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+        if constraint != "uq_calificacion_alumno_grupo_asig":
+            raise
+        raise CalificacionYaExisteError(
+            "Ya existe una calificación para este alumno en este grupo_asignatura; usa Corregir"
         ) from exc
 
     repository.create_auditoria(

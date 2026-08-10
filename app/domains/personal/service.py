@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.security import CurrentPersonal, hash_password
@@ -13,10 +14,31 @@ class LastActiveAdminError(Exception):
     ADR-003 ya documenta que esto se resuelve en el service."""
 
 
+class ValorDuplicadoError(Exception):
+    """UNIQUE violado (curp o email_institucional ya registrados)."""
+
+
+# Mismo patrón que app/domains/organizacional/service.py: un solo lugar
+# que traduce el constraint_name real de Postgres a un mensaje claro, en
+# vez de que el IntegrityError crudo se propague como 500 sin traducir.
+_CONSTRAINT_ERRORS: dict[str, str] = {
+    "personal_curp_key": "Ya existe personal registrado con ese CURP",
+    "personal_email_institucional_key": "Ya existe personal registrado con ese correo institucional",
+}
+
+
 def create_personal(db: Session, data: PersonalCreate) -> Personal:
     fields = data.model_dump(exclude={"password"})
     fields["password_hash"] = hash_password(data.password)
-    return repository.create_personal(db, fields)
+    try:
+        return repository.create_personal(db, fields)
+    except IntegrityError as exc:
+        db.rollback()
+        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+        message = _CONSTRAINT_ERRORS.get(constraint)
+        if message is None:
+            raise
+        raise ValorDuplicadoError(message) from exc
 
 
 def list_personal(db: Session) -> list[Personal]:

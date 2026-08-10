@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domains.organizacional import repository
@@ -7,6 +8,58 @@ from app.domains.organizacional.schemas import (
     PeriodoSemestralCreate,
     PlantelUpdate,
 )
+
+
+class FechasInvalidasError(Exception):
+    """fecha_fin <= fecha_inicio -- rechazado por chk_ciclo_fechas /
+    chk_periodo_fechas (db/ddl_mvp.sql), no verificado aparte en Python."""
+
+
+class ValorDuplicadoError(Exception):
+    """UNIQUE violado (nombre, clave_periodo, o combinación
+    id_ciclo+numero_periodo ya usada)."""
+
+
+class YaExisteActivoError(Exception):
+    """uq_ciclo_escolar_activo / uq_periodo_semestral_activo (índice único
+    parcial): ya hay otra fila con activo=true."""
+
+
+# constraint_name (tal como lo reporta Postgres, ver diag.constraint_name
+# de psycopg2) -> (excepción semántica, mensaje). Un solo lugar que traduce
+# los errores crudos de ambos endpoints (POST /ciclo-escolar y
+# POST /periodo-semestral comparten el mismo patrón de constraints) en vez
+# de repetir el try/except por caso.
+_CONSTRAINT_ERRORS: dict[str, tuple[type[Exception], str]] = {
+    "chk_ciclo_fechas": (FechasInvalidasError, "fecha_fin debe ser posterior a fecha_inicio"),
+    "ciclo_escolar_nombre_key": (ValorDuplicadoError, "Ya existe un ciclo escolar con ese nombre"),
+    "uq_ciclo_escolar_activo": (
+        YaExisteActivoError,
+        "Ya hay otro ciclo escolar activo; desactívalo antes de activar este",
+    ),
+    "chk_periodo_fechas": (FechasInvalidasError, "fecha_fin debe ser posterior a fecha_inicio"),
+    "periodo_semestral_clave_periodo_key": (
+        ValorDuplicadoError,
+        "Ya existe un periodo semestral con esa clave",
+    ),
+    "uq_periodo_ciclo_numero": (
+        ValorDuplicadoError,
+        "Ese ciclo ya tiene un periodo con ese número",
+    ),
+    "uq_periodo_semestral_activo": (
+        YaExisteActivoError,
+        "Ya hay otro periodo semestral activo; desactívalo antes de activar este",
+    ),
+}
+
+
+def _translate_integrity_error(exc: IntegrityError) -> Exception | None:
+    constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+    mapped = _CONSTRAINT_ERRORS.get(constraint)
+    if mapped is None:
+        return None
+    error_cls, message = mapped
+    return error_cls(message)
 
 
 def list_plantel(db: Session) -> list[Plantel]:
@@ -26,7 +79,14 @@ def list_ciclo_escolar(db: Session) -> list[CicloEscolar]:
 
 
 def create_ciclo_escolar(db: Session, data: CicloEscolarCreate) -> CicloEscolar:
-    return repository.create_ciclo_escolar(db, data.model_dump())
+    try:
+        return repository.create_ciclo_escolar(db, data.model_dump())
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def list_periodo_semestral(db: Session) -> list[PeriodoSemestral]:
@@ -34,7 +94,14 @@ def list_periodo_semestral(db: Session) -> list[PeriodoSemestral]:
 
 
 def create_periodo_semestral(db: Session, data: PeriodoSemestralCreate) -> PeriodoSemestral:
-    return repository.create_periodo_semestral(db, data.model_dump())
+    try:
+        return repository.create_periodo_semestral(db, data.model_dump())
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def set_periodo_semestral_activo(
