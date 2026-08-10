@@ -35,7 +35,10 @@ def post_grupo(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> GrupoOut:
-    return service.create_grupo(db, payload)
+    try:
+        return service.create_grupo(db, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/grupo/{id_grupo}", response_model=GrupoOut)
@@ -65,7 +68,10 @@ def post_asignatura(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> AsignaturaOut:
-    return service.create_asignatura(db, payload)
+    try:
+        return service.create_asignatura(db, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/asignatura/{id_asignatura}", response_model=AsignaturaOut)
@@ -104,6 +110,8 @@ def post_grupo_asignatura(
         return service.create_grupo_asignatura(db, payload)
     except service.DocenteInvalidoError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/grupo-asignatura/{id_grupo_asig}", response_model=GrupoAsignaturaOut)

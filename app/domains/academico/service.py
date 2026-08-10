@@ -1,4 +1,4 @@
-from sqlalchemy.exc import InternalError
+from sqlalchemy.exc import IntegrityError, InternalError
 from sqlalchemy.orm import Session
 
 from app.domains.academico import repository
@@ -18,12 +18,43 @@ class DocenteInvalidoError(Exception):
     por el trigger fn_valida_rol_docente (db/ddl_mvp.sql), no en Python."""
 
 
+class ValorDuplicadoError(Exception):
+    """UNIQUE violado (nombre_grupo dentro del mismo plantel+periodo,
+    clave_asignatura, o combinación grupo+asignatura+periodo ya usada)."""
+
+
+# Mismo patrón que app/domains/organizacional/service.py y
+# app/domains/personal/service.py: un solo lugar que traduce el
+# constraint_name real de Postgres a un mensaje claro, en vez de que el
+# IntegrityError crudo se propague como 500 sin traducir.
+_CONSTRAINT_ERRORS: dict[str, str] = {
+    "uq_grupo_nombre_periodo": "Ya existe un grupo con ese nombre en ese plantel y periodo",
+    "asignatura_clave_asignatura_key": "Ya existe una asignatura con esa clave",
+    "uq_grupo_asignatura_periodo": "Ese grupo ya tiene esa asignatura asignada en ese periodo",
+}
+
+
+def _translate_integrity_error(exc: IntegrityError) -> ValorDuplicadoError | None:
+    constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+    message = _CONSTRAINT_ERRORS.get(constraint)
+    if message is None:
+        return None
+    return ValorDuplicadoError(message)
+
+
 def list_grupo(db: Session) -> list[Grupo]:
     return repository.list_grupo(db)
 
 
 def create_grupo(db: Session, data: GrupoCreate) -> Grupo:
-    return repository.create_grupo(db, data.model_dump())
+    try:
+        return repository.create_grupo(db, data.model_dump())
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def update_grupo(db: Session, id_grupo: int, data: GrupoUpdate) -> Grupo | None:
@@ -38,7 +69,14 @@ def list_asignatura(db: Session) -> list[Asignatura]:
 
 
 def create_asignatura(db: Session, data: AsignaturaCreate) -> Asignatura:
-    return repository.create_asignatura(db, data.model_dump())
+    try:
+        return repository.create_asignatura(db, data.model_dump())
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def update_asignatura(db: Session, id_asignatura: int, data: AsignaturaUpdate) -> Asignatura | None:
@@ -60,6 +98,12 @@ def create_grupo_asignatura(db: Session, data: GrupoAsignaturaCreate) -> GrupoAs
         raise DocenteInvalidoError(
             "id_docente debe referenciar a un registro de personal con rol = docente"
         ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def update_grupo_asignatura(
