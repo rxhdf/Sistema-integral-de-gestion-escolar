@@ -24,7 +24,9 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
       },
     )
   }
-  items.push({ icon: 'person_search', label: 'Alumnos', active: false })
+  // Alumnos: a diferencia de Grupo/Asignatura/Personal, docente sí tiene R
+  // aquí (matriz RBAC Nivel 1) -- visible a los 3 roles, no solo X/A.
+  items.push({ icon: 'person_search', label: 'Alumnos', active: activeHref === '/alumno', href: '/alumno' })
   if (esDirectivoOAdmin) {
     items.push({
       icon: 'assignment_ind',

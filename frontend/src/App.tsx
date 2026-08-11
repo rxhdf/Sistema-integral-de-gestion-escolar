@@ -16,6 +16,10 @@ import { GrupoAsignaturaCreatePage } from '@/pages/GrupoAsignaturaCreatePage'
 import { CalificacionListPage } from '@/pages/CalificacionListPage'
 import { CalificacionCreatePage } from '@/pages/CalificacionCreatePage'
 import { CalificacionCorrectPage } from '@/pages/CalificacionCorrectPage'
+import { AlumnoListPage } from '@/pages/AlumnoListPage'
+import { AlumnoCreatePage } from '@/pages/AlumnoCreatePage'
+import { ExpedienteAcademicoCreatePage } from '@/pages/ExpedienteAcademicoCreatePage'
+import { ExpedienteAcademicoDetailPage } from '@/pages/ExpedienteAcademicoDetailPage'
 
 function App() {
   return (
@@ -39,6 +43,10 @@ function App() {
         <Route path="/calificacion" element={<CalificacionListPage />} />
         <Route path="/calificacion/nueva" element={<CalificacionCreatePage />} />
         <Route path="/calificacion/:idCalificacion/editar" element={<CalificacionCorrectPage />} />
+        <Route path="/alumno" element={<AlumnoListPage />} />
+        <Route path="/alumno/nuevo" element={<AlumnoCreatePage />} />
+        <Route path="/alumno/:idAlumno/expediente-academico" element={<ExpedienteAcademicoDetailPage />} />
+        <Route path="/expediente-academico/nuevo" element={<ExpedienteAcademicoCreatePage />} />
       </Routes>
     </BrowserRouter>
   )
