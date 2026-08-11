@@ -43,7 +43,10 @@ def post_alumno(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> AlumnoOutDirectivo:
-    return service.create_alumno(db, payload)
+    try:
+        return service.create_alumno(db, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/alumno/{id_alumno}", response_model=AlumnoOutDirectivo)
@@ -97,7 +100,10 @@ def post_expediente_academico(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> ExpedienteAcademicoOut:
-    return service.create_expediente(db, payload)
+    try:
+        return service.create_expediente(db, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
 
 
 @router.put("/expediente-academico/{id_alumno}", response_model=ExpedienteAcademicoOut)
