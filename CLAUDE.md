@@ -239,10 +239,25 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
   (`require_roles("docente")`) sigue siendo el único endpoint de
   escritura, sin `PUT /asistencia/{id}` planeado. `asistencia_update`
   (RLS) se deja como está aunque no se ejerza desde la API. **Frontend
-  cerrado**: captura+corrección (docente) + lectura (los 3 roles), sin
-  pantalla de corrección para directivo/admin (no aplica). Nada de esto
-  está commiteado todavía a la fecha de este cierre — confirmar con el
-  usuario antes de asumir que ya está en `main`.
+  cerrado y commiteado** (2026-08-11): captura+corrección (docente) +
+  lectura (los 3 roles), sin pantalla de corrección para directivo/admin
+  (no aplica).
+- `Perfil de Análisis de Alumno` (ADR-009, 2026-08-11): reintroduce
+  `municipio_origen`/`localidad_origen` en `Alumno` (excluidos de
+  `AlumnoOutDocente`, mismo criterio que fecha_nacimiento/email/
+  telefono_personal). `GET /alumno?search=` agregado sobre el endpoint
+  existente (nombre completo parcial o CURP exacta, sin cambio de
+  scope). Pantalla nueva `PerfilAnalisisAlumnoPage.tsx` (directivo/admin
+  exclusivo, con buscador propio en `/alumno/buscar`) compone en cliente
+  `GET /alumno` + `GET /expediente-academico/{id}` + `GET /calificacion`
+  + `GET /asistencia/resumen/{id}` — mismo patrón que "Mis grupos", sin
+  endpoint agregador nuevo. Bloqueo de docente es un gate explícito en
+  el cliente (no hay endpoint propio que lo rechace), verificado incluso
+  para un alumno dentro del propio scope RLS del docente. 176 tests
+  pasando en total (5 nuevos de search + exclusión de campos). Pendiente: sin
+  formulario en `AlumnoCreatePage`/`AlumnoEditPage` para capturar los 2
+  campos nuevos (existen en el schema, se fijan solo vía API por ahora).
+  **Frontend cerrado y commiteado.**
 
 ## Regla explícita para cualquier cambio de esquema
 

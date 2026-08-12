@@ -76,6 +76,7 @@ Nivel 1 sobre `Personal`.
 | `nombre`, `apellido_paterno`, `apellido_materno`, `matricula` | Sí | Sí |
 | `curp` | Sí (solo la CURP, no otros datos personales) | Sí |
 | `fecha_nacimiento`, `email`, `telefono_personal` | **No** | Sí |
+| `municipio_origen`, `localidad_origen` | **No** — agregados para "Perfil de Análisis de Alumno" (directivo/admin exclusivo, sin caso de uso de docente), mismo criterio que la fila anterior | Sí |
 
 ### `Expediente_Academico` (datos `Académica-restringida`)
 
