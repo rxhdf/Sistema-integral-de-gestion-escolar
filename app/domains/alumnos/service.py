@@ -55,7 +55,14 @@ def update_alumno(db: Session, id_alumno: int, data: AlumnoUpdate) -> Alumno | N
     alumno = repository.get_alumno(db, id_alumno)
     if alumno is None:
         return None
-    return repository.update_alumno(db, alumno, data.model_dump(exclude_unset=True))
+    try:
+        return repository.update_alumno(db, alumno, data.model_dump(exclude_unset=True))
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def inscribir_alumno(db: Session, id_alumno: int, data: AlumnoInscribir) -> Alumno | None:

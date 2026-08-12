@@ -61,7 +61,14 @@ def update_grupo(db: Session, id_grupo: int, data: GrupoUpdate) -> Grupo | None:
     grupo = repository.get_grupo(db, id_grupo)
     if grupo is None:
         return None
-    return repository.update_grupo(db, grupo, data.model_dump(exclude_unset=True))
+    try:
+        return repository.update_grupo(db, grupo, data.model_dump(exclude_unset=True))
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc
 
 
 def list_asignatura(db: Session) -> list[Asignatura]:
@@ -121,3 +128,9 @@ def update_grupo_asignatura(
         raise DocenteInvalidoError(
             "id_docente debe referenciar a un registro de personal con rol = docente"
         ) from exc
+    except IntegrityError as exc:
+        db.rollback()
+        translated = _translate_integrity_error(exc)
+        if translated is None:
+            raise
+        raise translated from exc

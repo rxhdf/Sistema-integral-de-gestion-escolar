@@ -48,7 +48,10 @@ def put_grupo(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> GrupoOut:
-    grupo = service.update_grupo(db, id_grupo, payload)
+    try:
+        grupo = service.update_grupo(db, id_grupo, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     if grupo is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Grupo no encontrado")
     return grupo
@@ -125,6 +128,8 @@ def put_grupo_asignatura(
         grupo_asignatura = service.update_grupo_asignatura(db, id_grupo_asig, payload)
     except service.DocenteInvalidoError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     if grupo_asignatura is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Grupo_Asignatura no encontrado")
     return grupo_asignatura

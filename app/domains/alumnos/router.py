@@ -56,7 +56,10 @@ def put_alumno(
     db: Session = Depends(get_db),
     _current=Depends(_puede_escribir),
 ) -> AlumnoOutDirectivo:
-    alumno = service.update_alumno(db, id_alumno, payload)
+    try:
+        alumno = service.update_alumno(db, id_alumno, payload)
+    except service.ValorDuplicadoError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     if alumno is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alumno no encontrado")
     return alumno
