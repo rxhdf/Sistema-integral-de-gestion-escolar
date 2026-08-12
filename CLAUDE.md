@@ -63,9 +63,26 @@ en `docs/validacion/ci-dispatch-outage-2026-08-06.md`.
 implementadas** (`Plantel`, `Ciclo_Escolar`, `Periodo_Semestral`,
 `Personal`, `Grupo`, `Asignatura`, `Grupo_Asignatura`, `Alumno`,
 `Expediente_Academico`, `Calificacion`, `Auditoria_Calificacion`). No hay
-una "Fase 6" planeada todavía — el siguiente paso es decisión del
-usuario: cerrar pendientes sueltos (ver abajo) o pasar a otra capa
-(frontend, deploy, etc.).
+una "Fase 6" de backend planeada todavía.
+
+**Frontend del MVP cerrado (31 de 32 fichas).** Las 5 flujos de
+`docs/frontend/01-priorizacion-flujos.md` tienen página real en
+`frontend/src/pages/`: listados, altas, acciones (inscribir, activar/
+desactivar) y ediciones de las 11 entidades del MVP. Evidencia real:
+158 tests de backend pasando (incluye 3 traducciones de 500→409 nuevas
+en `PUT /grupo`, `PUT /grupo-asignatura`, `PUT /alumno`), `tsc`/`vite
+build`/`oxlint` limpios, y verificación manual con los 3 roles reales
+contra `docker-compose` (incluye el guard del único admin activo en
+`PUT /personal` y la edición sin `{id}` de `Plantel`) — ver
+`docs/validacion/frontend-mvp-cierre.md` para el detalle completo,
+incluyendo un hallazgo documentado (no corregido, fuera de alcance) de
+datos sueltos + falta de `ORDER BY` en `GET /plantel`. Única ficha
+pendiente: **#32, `GET /auditoria-calificacion`** (read-only, sin nada
+corriente abajo que dependa de ella).
+
+Con backend y frontend del MVP completos, el siguiente paso es decisión
+del usuario: cerrar la ficha #32, resolver el hallazgo del Punto 4 de
+`frontend-mvp-cierre.md`, o pasar a otra capa (deploy, etc.).
 
 ## Qué leer para qué (no releer todo por defecto)
 
@@ -85,6 +102,8 @@ usuario: cerrar pendientes sueltos (ver abajo) o pasar a otra capa
 | Cierre consolidado y definitivo de Fase 5 (Calificacion/Auditoria_Calificacion) | `docs/validacion/fase-05-calificaciones.md` |
 | Historial turno-por-turno de cómo se llegó al cierre de Fase 5 (gaps de RLS según se fueron encontrando) | `docs/validacion/fase-05-control-escolar.md` |
 | Outage de dispatch de GitHub Actions del 2026-08-06 — RESUELTO, cierre con evidencia | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
+| Cierre del frontend del MVP (32/32 fichas menos auditoría) + hallazgo de Plantel/ORDER BY | `docs/validacion/frontend-mvp-cierre.md` |
+| Qué pantalla del frontend cubre cada endpoint, y por qué se priorizó en ese orden | `docs/frontend/01-priorizacion-flujos.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
@@ -157,9 +176,19 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 - `PUT /plantel` implementado (2026-08-06): directivo/admin editan la
   única fila de `Plantel` (sin `{id}` en el path, no hay ambigüedad de
   cuál — mismo patrón que `PUT /periodo-semestral` y `PUT /personal`).
-  138 tests pasando (135 previos + 3 nuevos: docente 403, directivo 200,
-  admin 200). `POST /plantel` sigue bloqueado a propósito (ver nota en
+  `POST /plantel` sigue bloqueado a propósito (ver nota en
   `docs/rbac/matriz-rbac-mvp.md`), eso no cambió.
+- Ficha #32 (`GET /auditoria-calificacion`) es la única pantalla del
+  frontend del MVP que falta — read-only, sin bloqueo real, ver
+  `docs/validacion/frontend-mvp-cierre.md`.
+- Hallazgo sin corregir (2026-08-11, ver Punto 4 de
+  `docs/validacion/frontend-mvp-cierre.md`): `get_plantel`/`list_plantel`
+  (`app/domains/organizacional/repository.py`) no tienen `ORDER BY`, y la
+  base de datos de desarrollo local tiene 2 filas de `Plantel` (`PL-01`,
+  `PL-DEV`) y 4 de `Personal` sueltas de una sesión de pruebas manual
+  anterior, ajenas a `db/seed_dev.py`. No afecta producción (nunca hubo
+  más de 1 fila real) pero es dev-only cruft a limpiar y un `ORDER BY`
+  a agregar si se quiere blindar el caso.
 
 ## Regla explícita para cualquier cambio de esquema
 

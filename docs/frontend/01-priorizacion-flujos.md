@@ -10,33 +10,22 @@ contradicción que resolver.
 
 ## Estado de implementación (frontend)
 
-Fichas #1, #3, #4, #5, #6 y #7 del orden global (abajo) ya tienen
-página real en `frontend/src/pages/` y ruta en `App.tsx`:
-`POST /auth/login`, `GET`/`POST /ciclo-escolar`, y
-`GET`/`POST /periodo-semestral` + `PUT /periodo-semestral/{id}`
-(activar/desactivar). Verificado con directivo@ y docente@cobao.edu.mx
-reales, backend real (`docker-compose`), 138 tests de backend + 8 de
-frontend en verde.
+Fichas #1, #3-#23 del orden global (abajo) ya tienen página real en
+`frontend/src/pages/` y ruta en `App.tsx`: login, Flujo 1
+(`Ciclo_Escolar`/`Periodo_Semestral`, sin `Plantel`), Flujo 2
+(`POST`/`GET /personal`, sin `PUT` ni "Mi perfil"), Flujo 3 completo
+(`Grupo`/`Asignatura`/`Grupo_Asignatura`, listado+alta), Flujo 4
+completo (`Alumno`/`Expediente_Academico`, listado+alta+inscripción),
+Flujo 5 completo (`Calificacion`, listar+capturar+corregir).
+Verificado con los 3 roles reales, backend real (`docker-compose`).
 
-**Flujo 1 (setup institucional) NO está formalmente cerrado todavía.**
-`Ciclo_Escolar` y `Periodo_Semestral` (las 5 fichas con criterio
-Bloqueo: #3-#7) sí están cerradas. `Plantel` (fichas #30 y #31 —
-`GET`/`PUT /plantel`) sigue sin página en el frontend (no hay
-`PlantelPage.tsx` ni ruta `/plantel` en `App.tsx`) aunque el backend ya
-las expone completas desde antes. El propio criterio de priorización de
-este documento explica por qué se sintió "ya cerrado": `Plantel` es
-Bloqueo nulo y la frecuencia más baja de las 32 fichas (ver nota al
-final), así que no bloqueaba nada de lo que se acaba de construir — pero
-sigue siendo parte de Flujo 1 y falta por hacer.
-
-Ficha #2 (`GET /personal/me`) tampoco tiene vista propia ("Mi perfil")
-— el endpoint se consume internamente (header, guards de rol) pero no
-hay pantalla dedicada. No bloquea nada corriente abajo, es lectura del
-propio registro.
-
-**Siguiente en el orden global:** ficha **#8, `POST /personal`** (alta
-de personal — `require_roles("admin")`), primera del Flujo 2 que
-todavía no tiene página.
+**Cierre en curso — última tanda antes de dar por completo el
+frontend del MVP (fichas #2, #24-31):** las 8 pantallas que faltan son
+todas ediciones (`PUT`) de baja frecuencia por Congruencia (Personal,
+Grupo, Asignatura, Grupo_Asignatura, Alumno, Expediente_Academico),
+más `Plantel` (#30-31, Bloqueo nulo, frecuencia más baja de las 32) y
+"Mi perfil" (#2, ficha de solo lectura sin dependencias). Único pendiente
+después de esta tanda: `GET /auditoria-calificacion` (#32).
 
 ## Los 3 criterios
 
@@ -174,3 +163,19 @@ explícitamente cuál ganó y por qué (ver nota al final sobre
   institucional casi de evento único). `GET /auditoria-calificacion`
   (#32) cierra la lista por el mismo motivo: es un derivado read-only
   sin ninguna pantalla corriente abajo que dependa de ella.
+- **`GET /personal/me` (#2) se construye primero dentro de la tanda de
+  cierre (#2, #24-31), no en su posición global #2.** La razón original
+  de ese #2 era Bloqueo+Frecuencia — "primera llamada autenticada real
+  de cualquier sesión" — pero esa razón dejó de aplicar desde que
+  `PersonalMe` se resuelve vía el hook `useApiQuery(getPersonalMe)` que
+  ya usa cada página para pintar el layout y resolver rol (Flujo 1 en
+  adelante): la dependencia que la ficha bloqueaba ya está resuelta por
+  código compartido, no por una pantalla dedicada. Al construir "Mi
+  perfil" como pantalla real, ya no hay nada que bloquear — se reordena
+  primero dentro de esta tanda por **Congruencia**: es la pantalla más
+  simple de las 8 (sin formulario, sin mutación, reusa datos que cada
+  página ya pide) y agrupa con el dominio Personal antes de #24 (`PUT
+  /personal`). El orden global de la tabla arriba no se edita — sigue
+  reflejando el criterio con el que se planeó originalmente; este bullet
+  documenta por qué el orden de construcción real de esta tanda difiere
+  de esa tabla.
