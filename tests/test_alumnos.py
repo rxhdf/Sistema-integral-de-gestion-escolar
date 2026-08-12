@@ -14,6 +14,7 @@ from tests.test_academico import (
 from tests.test_login_rls_e2e import _set_session
 
 CAMPOS_SENSIBLES = {"fecha_nacimiento", "email", "telefono_personal"}
+CAMPOS_ORIGEN = {"municipio_origen", "localidad_origen"}
 
 
 def _post_alumno(client, headers, seed, n=1, id_grupo=None, **overrides):
@@ -94,6 +95,95 @@ def test_alumno_get_directivo_view_includes_all_fields_200(client, seed):
     alumnos = resp.json()
     assert len(alumnos) == 1
     assert CAMPOS_SENSIBLES <= alumnos[0].keys()
+
+
+# --- docs/data_dictionary/perfil-analisis-alumno.md: municipio_origen/
+# localidad_origen -- mismo criterio que fecha_nacimiento/email/
+# telefono_personal (excluidos de AlumnoOutDocente, ver schemas.py).
+
+
+def test_alumno_get_docente_view_omits_origen_fields_200(client, seed):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente = seed["ids"]["docente1@sige.test"]
+    id_grupo = _docente_con_grupo(client, admin_headers, seed, id_docente, "1A", "MAT-01")
+    _post_alumno(
+        client,
+        admin_headers,
+        seed,
+        n=1,
+        id_grupo=id_grupo,
+        municipio_origen="Oaxaca de Juárez",
+        localidad_origen="Centro",
+    )
+
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    resp = client.get("/alumno", headers=docente_headers)
+    assert resp.status_code == 200
+    assert not CAMPOS_ORIGEN & resp.json()[0].keys()
+
+
+def test_alumno_get_directivo_view_includes_origen_fields_200(client, seed):
+    headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    _post_alumno(
+        client, headers, seed, n=1, municipio_origen="Oaxaca de Juárez", localidad_origen="Centro"
+    )
+
+    resp = client.get("/alumno", headers=headers)
+    assert resp.status_code == 200
+    alumno = resp.json()[0]
+    assert CAMPOS_ORIGEN <= alumno.keys()
+    assert alumno["municipio_origen"] == "Oaxaca de Juárez"
+    assert alumno["localidad_origen"] == "Centro"
+
+
+# --- GET /alumno?search=: coincidencia parcial de nombre completo o CURP
+# exacta (docs/data_dictionary/perfil-analisis-alumno.md, Pieza 2) -------
+
+
+def test_alumno_search_partial_nombre_200(client, seed):
+    headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    _post_alumno(client, headers, seed, n=1, nombre="Maria", apellido_paterno="Lopez")
+    _post_alumno(client, headers, seed, n=2, nombre="Juan", apellido_paterno="Perez")
+
+    resp = client.get("/alumno", headers=headers, params={"search": "aria Lop"})
+    assert resp.status_code == 200
+    assert [a["matricula"] for a in resp.json()] == ["MAT-0001"]
+
+
+def test_alumno_search_curp_exacta_200(client, seed):
+    headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    _post_alumno(client, headers, seed, n=1)
+    _post_alumno(client, headers, seed, n=2)
+
+    resp = client.get("/alumno", headers=headers, params={"search": f"CURPALUM{1:010d}"})
+    assert resp.status_code == 200
+    assert [a["matricula"] for a in resp.json()] == ["MAT-0001"]
+
+
+def test_alumno_search_sin_resultados_200(client, seed):
+    headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    _post_alumno(client, headers, seed, n=1)
+
+    resp = client.get("/alumno", headers=headers, params={"search": "no-existe-nadie"})
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_alumno_search_respeta_scope_docente_200(client, seed):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    id_docente_1 = seed["ids"]["docente1@sige.test"]
+    id_docente_2 = _crear_docente(
+        client, admin_headers, seed, "docente2@sige.test", "CURPDOCENTE0000002", "docente2-pass-1"
+    )
+    id_grupo_1 = _docente_con_grupo(client, admin_headers, seed, id_docente_1, "1A", "MAT-01")
+    id_grupo_2 = _docente_con_grupo(client, admin_headers, seed, id_docente_2, "1B", "MAT-02")
+    _post_alumno(client, admin_headers, seed, n=1, id_grupo=id_grupo_1, nombre="Maria")
+    _post_alumno(client, admin_headers, seed, n=2, id_grupo=id_grupo_2, nombre="Maria")
+
+    docente1_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    resp = client.get("/alumno", headers=docente1_headers, params={"search": "Maria"})
+    assert resp.status_code == 200
+    assert [a["matricula"] for a in resp.json()] == ["MAT-0001"]
 
 
 # --- Scope: docente solo ve alumnos de grupos donde tiene grupo_asignatura

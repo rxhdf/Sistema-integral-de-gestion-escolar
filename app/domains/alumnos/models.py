@@ -24,6 +24,8 @@ class Alumno(Base):
     estatus: Mapped[str] = mapped_column(String(20), nullable=False, server_default="activo")
     fecha_inscripcion: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_baja: Mapped[date | None] = mapped_column(Date)
+    municipio_origen: Mapped[str | None] = mapped_column(String(100))
+    localidad_origen: Mapped[str | None] = mapped_column(String(100))
 
 
 class ExpedienteAcademico(Base):

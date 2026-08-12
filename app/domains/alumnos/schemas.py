@@ -27,11 +27,19 @@ class AlumnoOutDocente(BaseModel):
 
 
 class AlumnoOutDirectivo(AlumnoOutDocente):
-    """Vista de directivo/admin: todos los campos."""
+    """Vista de directivo/admin: todos los campos.
+
+    municipio_origen/localidad_origen excluidos de AlumnoOutDocente a
+    propósito: se agregaron para "Perfil de Análisis de Alumno"
+    (directivo/admin exclusivo, sin caso de uso para docente) -- mismo
+    criterio que fecha_nacimiento/email/telefono_personal.
+    """
 
     fecha_nacimiento: date
     email: str | None
     telefono_personal: str | None
+    municipio_origen: str | None
+    localidad_origen: str | None
 
 
 class AlumnoCreate(BaseModel):
@@ -47,6 +55,8 @@ class AlumnoCreate(BaseModel):
     email: str | None = Field(default=None, max_length=100)
     telefono_personal: str | None = Field(default=None, max_length=20)
     fecha_inscripcion: date
+    municipio_origen: str | None = Field(default=None, max_length=100)
+    localidad_origen: str | None = Field(default=None, max_length=100)
 
 
 class AlumnoUpdate(BaseModel):
@@ -61,6 +71,8 @@ class AlumnoUpdate(BaseModel):
     telefono_personal: str | None = Field(default=None, max_length=20)
     estatus: str | None = Field(default=None, max_length=20)
     fecha_baja: date | None = None
+    municipio_origen: str | None = Field(default=None, max_length=100)
+    localidad_origen: str | None = Field(default=None, max_length=100)
 
 
 class AlumnoInscribir(BaseModel):

@@ -155,7 +155,9 @@ CREATE TABLE alumno (
     telefono_personal   VARCHAR(20),
     estatus             VARCHAR(20) NOT NULL DEFAULT 'activo',
     fecha_inscripcion   DATE NOT NULL,
-    fecha_baja          DATE
+    fecha_baja          DATE,
+    municipio_origen    VARCHAR(100),
+    localidad_origen    VARCHAR(100)
 );
 
 -- ---------------------------------------------------------------------

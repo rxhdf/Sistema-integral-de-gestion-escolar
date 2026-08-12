@@ -36,8 +36,8 @@ def _translate_integrity_error(exc: IntegrityError) -> ValorDuplicadoError | Non
     return ValorDuplicadoError(message)
 
 
-def list_alumno(db: Session) -> list[Alumno]:
-    return repository.list_alumno(db)
+def list_alumno(db: Session, search: str | None = None) -> list[Alumno]:
+    return repository.list_alumno(db, search)
 
 
 def create_alumno(db: Session, data: AlumnoCreate) -> Alumno:

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.security import CurrentPersonal, get_current_personal, require_roles
@@ -29,10 +29,11 @@ _puede_escribir = require_roles("directivo", "admin")
 # ignore.
 @router.get("/alumno", response_model=None)
 def get_alumno(
+    search: str | None = Query(default=None),
     db: Session = Depends(get_db),
     current: CurrentPersonal = Depends(get_current_personal),
 ) -> list[dict]:
-    alumnos = service.list_alumno(db)
+    alumnos = service.list_alumno(db, search)
     schema = AlumnoOutDocente if current.rol == "docente" else AlumnoOutDirectivo
     return [schema.model_validate(a).model_dump() for a in alumnos]
 
