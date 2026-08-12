@@ -84,13 +84,56 @@ Con backend y frontend del MVP completos, el siguiente paso es decisión
 del usuario: cerrar la ficha #32, resolver el hallazgo del Punto 4 de
 `frontend-mvp-cierre.md`, o pasar a otra capa (deploy, etc.).
 
+**`Asistencia` (backend) — primera feature post-MVP, cerrada y
+confirmada (ADR-008).** ADR-002 la excluía del alcance original; ADR-008
+documenta por qué se agrega ahora sin reabrir el resto de entidades
+excluidas (`Familia`, `Tutor`, `Expediente_Personal`/`Escolar`, que
+siguen fuera). Diseño cerrado en `docs/data_dictionary/asistencia.md`:
+registro por sesión (alumno x `grupo_asignatura` x fecha), captura en
+lote con UPSERT (`POST /asistencia/lote`, corrige sin `409` a diferencia
+de `Calificacion`), RLS con el mismo patrón que `calificacion_select`/
+`insert`/`update` más anti-suplantación de `id_personal_registro`. RLS
+validada con `sige_app` directo (10 casos de matriz) **antes** de
+escribir FastAPI, mismo rigor que Fase 5. 170 tests pasando (158
+previos + 12 nuevos de `tests/test_asistencia.py`), local
+(`docker-compose`). **Decisión confirmada (2026-08-11): directivo/admin
+NO corrigen asistencia** — el negocio no lo requiere; sin endpoint
+`PUT`, `asistencia_update` (RLS) se deja como está sin ejercerse desde
+la API (ver "Consecuencias" en ADR-008, actualizado).
+
+**`Asistencia` (frontend) — cerrado.** 3 pantallas:
+`AsistenciaCapturaPage` (`/asistencia/capturar`, docente únicamente —
+selecciona su `grupo_asignatura`, precarga el estado ya capturado ese
+día si existe, corrige vía el mismo submit/UPSERT), `AsistenciaListPage`
+(`/asistencia`, vista diaria, los 3 roles), `AsistenciaResumenPage`
+(`/alumno/:id/asistencia-resumen`, agregado por alumno, los 3 roles,
+enlazada desde `AlumnoListPage`). Nav item "Asistencia" visible a los 3
+roles (docente tiene R, mismo patrón que "Alumnos"/"Plantel").
+
+**Bug real encontrado y corregido durante la construcción, con impacto
+más allá de Asistencia:** `frontend/src/lib/useApiQuery.ts` no volvía a
+poner `loading: true` al cambiar de `fetcher` (ej. un `useCallback` que
+depende de un `id` de ruta o un `<select>`) — el estado se quedaba con
+el `data`/`loading:false` de la consulta ANTERIOR mientras la nueva
+seguía en vuelo. Cualquier página que decidiera "ya cargó" mirando solo
+`loading` podía actuar sobre datos viejos. Corregido en el hook
+compartido (afecta a las ~5 páginas con fetchers dinámicos, no solo
+Asistencia). Además, `AsistenciaCapturaPage` tenía una condición de
+carrera propia (un guard "ya inicialicé para esta combinación
+grupo+fecha" que podía marcarse en un render intermedio con datos
+todavía vacíos) — se resolvió rediseñando el precargado para que el
+valor mostrado/enviado se **derive** en cada render
+(`overrides[id] ?? servidor[id] ?? 'presente'`) en vez de "snapshotear"
+una vez; eso elimina la clase entera de bug, no solo el síntoma
+observado. Ver commit correspondiente para el detalle completo.
+
 ## Qué leer para qué (no releer todo por defecto)
 
 | Necesito... | Leer |
 |---|---|
 | Entidades, tipos de campo, nulabilidad, sensibilidad de datos | `docs/data_dictionary/mvp.md` |
 | Quién puede hacer qué (CRUD por rol, scope, campos ocultos) | `docs/rbac/matriz-rbac-mvp.md` |
-| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-007.md` (ver resumen abajo) |
+| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-008.md` (ver resumen abajo) |
 | El DDL real, ya validado en Postgres 16 (tablas, RLS, funciones helper) | `db/ddl_mvp.sql` |
 | Cómo se traduce ese DDL a Alembic | `app/db/migrations/versions/7460fa835be8_initial_schema_from_ddl_mvp.py` |
 | Cómo levantar todo local (roles, migración automática, /health) | `docker-compose.yml` + `docs/decisions/ADR-006.md` |
@@ -104,16 +147,18 @@ del usuario: cerrar la ficha #32, resolver el hallazgo del Punto 4 de
 | Outage de dispatch de GitHub Actions del 2026-08-06 — RESUELTO, cierre con evidencia | `docs/validacion/ci-dispatch-outage-2026-08-06.md` |
 | Cierre del frontend del MVP (32/32 fichas menos auditoría) + hallazgo de Plantel/ORDER BY | `docs/validacion/frontend-mvp-cierre.md` |
 | Qué pantalla del frontend cubre cada endpoint, y por qué se priorizó en ese orden | `docs/frontend/01-priorizacion-flujos.md` |
+| Diseño cerrado de Asistencia (campos, RBAC, endpoint de lote/UPSERT) | `docs/data_dictionary/asistencia.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
 - **ADR-001**: `Expediente_Academico` es tabla separada de `Alumno` — permite RLS por tabla completa, no por columna.
-- **ADR-002**: MVP limitado a `Expediente_Academico`; `Expediente_Personal`/`Escolar`, `Familia`, `Tutor`, `Asistencia`, etc. quedan fuera a propósito.
+- **ADR-002**: MVP limitado a `Expediente_Academico`; `Expediente_Personal`/`Escolar`, `Familia`, `Tutor`, etc. quedan fuera a propósito. `Asistencia` salió de esa lista en ADR-008 (post-MVP, agregada).
 - **ADR-003**: roles colapsados en `Personal.rol` (`docente`/`directivo`/`admin`), no tablas separadas por rol.
 - **ADR-004**: `directivo`/`admin` sí pueden corregir calificaciones ya capturadas por un docente (auditoría debe distinguir captura vs. corrección).
 - **ADR-005**: `calificacion_final` y `promedio_actual` se calculan en el service de FastAPI, no en trigger ni vista de Postgres.
 - **ADR-006**: separación de roles de conexión a Postgres (ver siguiente sección) — el más relevante para cualquier trabajo de infraestructura/backend.
 - **ADR-007**: `fn_login_lookup` (`SECURITY DEFINER`) — excepción acotada a RLS de `Personal` para resolver el login, ya que antes de emitir el JWT no hay `SET app.current_rol`/`app.current_personal_id` que RLS pueda usar.
+- **ADR-008**: `Asistencia` se agrega post-MVP (ADR-002 la excluía) — diseño cerrado, resto de entidades excluidas por ADR-002 siguen fuera de alcance.
 
 ## Roles de conexión a Postgres (ADR-006) — regla dura
 
@@ -189,6 +234,15 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
   anterior, ajenas a `db/seed_dev.py`. No afecta producción (nunca hubo
   más de 1 fila real) pero es dev-only cruft a limpiar y un `ORDER BY`
   a agregar si se quiere blindar el caso.
+- `Asistencia` (ADR-008): confirmado con el negocio (2026-08-11) que
+  directivo/admin NO corrigen asistencia — `POST /asistencia/lote`
+  (`require_roles("docente")`) sigue siendo el único endpoint de
+  escritura, sin `PUT /asistencia/{id}` planeado. `asistencia_update`
+  (RLS) se deja como está aunque no se ejerza desde la API. **Frontend
+  cerrado**: captura+corrección (docente) + lectura (los 3 roles), sin
+  pantalla de corrección para directivo/admin (no aplica). Nada de esto
+  está commiteado todavía a la fecha de este cierre — confirmar con el
+  usuario antes de asumir que ya está en `main`.
 
 ## Regla explícita para cualquier cambio de esquema
 

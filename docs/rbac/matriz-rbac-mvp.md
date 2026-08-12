@@ -27,6 +27,17 @@ gestión de cuentas de `Personal`.
 | `Alumno` | R | C, R, U | C, R, U |
 | `Expediente_Academico` | R (campos limitados, ver Nivel 3) | C, R, U | C, R, U |
 | `Calificacion` | C, R, U (solo de sus `Grupo_Asignatura`) | R, U (puede corregir calificación ya capturada por docente) | R, U (mismo alcance que directivo) |
+| `Asistencia` (post-MVP, ADR-008) | C, R, U (solo de sus `Grupo_Asignatura`, ver nota) | R (mismo alcance que `Calificacion`) | R (mismo alcance que `Calificacion`) |
+
+> **Nota — `Asistencia`, gap conocido (ADR-008):** el diseño
+> (`docs/data_dictionary/asistencia.md`) le da a directivo/admin
+> capacidad de `U` ("corregir cualquier registro ya capturado"), y la
+> política RLS `asistencia_update` ya lo permite — pero no existe
+> todavía un endpoint HTTP que lo ejerza (el único endpoint de
+> escritura, `POST /asistencia/lote`, es `require_roles("docente")`
+> únicamente). Esta fila queda marcada solo `R` para directivo/admin
+> hasta que ese endpoint exista; no es un límite de RLS, es una entrega
+> incompleta documentada.
 
 > **Nota — `Plantel` sin `C`, pero con `U`:** ningún rol tiene `Create`
 > sobre `Plantel`, ni siquiera `admin` — el MVP es de un solo plantel
@@ -48,6 +59,7 @@ gestión de cuentas de `Personal`.
 | `Grupo_Asignatura` | `WHERE id_docente = current_user_id` | Todos los del `id_plantel` (vía join a `Grupo`) |
 | `Calificacion` | `WHERE id_grupo_asig IN (SELECT id_grupo_asig FROM grupo_asignatura WHERE id_docente = current_user_id)` | Todos los del `id_plantel` |
 | `Alumno` (lectura) | Solo alumnos en algún `Grupo` donde el docente tiene `Grupo_Asignatura` activa | Todos los del `id_plantel` |
+| `Asistencia` | `WHERE id_grupo_asig IN (SELECT id_grupo_asig FROM grupo_asignatura WHERE id_docente = current_user_id)` (idéntico a `Calificacion`) | Todos los del `id_plantel` |
 
 `directivo` y `admin` comparten el mismo scope en todas las entidades
 operativas/académicas — la diferencia entre ambos vive únicamente en el
