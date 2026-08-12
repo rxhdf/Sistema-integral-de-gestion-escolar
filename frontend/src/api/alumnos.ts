@@ -43,10 +43,16 @@ export interface AlumnoRow {
   fecha_nacimiento?: string
   email?: string | null
   telefono_personal?: string | null
+  municipio_origen?: string | null
+  localidad_origen?: string | null
 }
 
-export function getAlumnosFull(): Promise<AlumnoRow[]> {
-  return apiGet<AlumnoRow[]>('/alumno')
+// search: docs/data_dictionary/perfil-analisis-alumno.md Pieza 2 --
+// coincidencia parcial de nombre completo o CURP exacta, solo acota el
+// mismo conjunto ya permitido por RLS, no cambia el scope.
+export function getAlumnosFull(search?: string): Promise<AlumnoRow[]> {
+  const query = search ? `?search=${encodeURIComponent(search)}` : ''
+  return apiGet<AlumnoRow[]>(`/alumno${query}`)
 }
 
 export interface AlumnoCreate {
@@ -62,6 +68,8 @@ export interface AlumnoCreate {
   email?: string | null
   telefono_personal?: string | null
   fecha_inscripcion: string
+  municipio_origen?: string | null
+  localidad_origen?: string | null
 }
 
 // Rol(es): X, A -- ficha 17. matricula/curp UNIQUE se traducen a 409 (antes
@@ -122,6 +130,8 @@ export interface AlumnoUpdate {
   telefono_personal?: string | null
   estatus?: string
   fecha_baja?: string | null
+  municipio_origen?: string | null
+  localidad_origen?: string | null
 }
 
 // Rol(es): X, A -- ficha 28. matricula UNIQUE -> 409 (corregido en esta

@@ -38,6 +38,15 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
       active: activeHref === '/personal',
       href: '/personal',
     })
+    // docs/data_dictionary/perfil-analisis-alumno.md: exclusivo de
+    // directivo/admin -- docente no tiene este caso de uso, se descartó
+    // explícitamente en el diseño.
+    items.push({
+      icon: 'manage_search',
+      label: 'Análisis de alumno',
+      active: activeHref === '/alumno/buscar',
+      href: '/alumno/buscar',
+    })
   }
   // Académico (Grupo/Asignatura/Grupo_Asignatura): mismo criterio que Ciclo
   // escolar/Periodo semestral/Personal -- oculto del nav para docente

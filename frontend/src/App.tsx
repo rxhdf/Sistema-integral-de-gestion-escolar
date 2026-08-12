@@ -19,6 +19,8 @@ import { CalificacionCorrectPage } from '@/pages/CalificacionCorrectPage'
 import { AlumnoListPage } from '@/pages/AlumnoListPage'
 import { AlumnoCreatePage } from '@/pages/AlumnoCreatePage'
 import { AlumnoEditPage } from '@/pages/AlumnoEditPage'
+import { AlumnoBuscarPage } from '@/pages/AlumnoBuscarPage'
+import { PerfilAnalisisAlumnoPage } from '@/pages/PerfilAnalisisAlumnoPage'
 import { ExpedienteAcademicoCreatePage } from '@/pages/ExpedienteAcademicoCreatePage'
 import { ExpedienteAcademicoDetailPage } from '@/pages/ExpedienteAcademicoDetailPage'
 import { ExpedienteAcademicoEditPage } from '@/pages/ExpedienteAcademicoEditPage'
@@ -61,7 +63,9 @@ function App() {
         <Route path="/calificacion/nueva" element={<CalificacionCreatePage />} />
         <Route path="/calificacion/:idCalificacion/editar" element={<CalificacionCorrectPage />} />
         <Route path="/alumno" element={<AlumnoListPage />} />
+        <Route path="/alumno/buscar" element={<AlumnoBuscarPage />} />
         <Route path="/alumno/nuevo" element={<AlumnoCreatePage />} />
+        <Route path="/alumno/:idAlumno/perfil-analisis" element={<PerfilAnalisisAlumnoPage />} />
         <Route path="/alumno/:idAlumno/editar" element={<AlumnoEditPage />} />
         <Route path="/alumno/:idAlumno/expediente-academico" element={<ExpedienteAcademicoDetailPage />} />
         <Route path="/alumno/:idAlumno/expediente-academico/editar" element={<ExpedienteAcademicoEditPage />} />
