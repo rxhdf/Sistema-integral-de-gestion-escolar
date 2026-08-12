@@ -20,6 +20,15 @@ export function useApiQuery<T>(fetcher: () => Promise<T>): QueryState<T> {
 
   useEffect(() => {
     let cancelled = false
+    // Vuelve a loading:true al cambiar de fetcher (ej. un useCallback que
+    // depende de un id de ruta o de un select) -- sin esto, `state` se
+    // queda con el data/loading:false de la consulta ANTERIOR mientras la
+    // nueva sigue en vuelo, y cualquier página que decida "ya terminó de
+    // cargar" mirando solo `loading` actúa sobre datos viejos (bug real,
+    // encontrado en AsistenciaCapturaPage.tsx: el precargado de asistencia
+    // se inicializaba con el resultado vacío de la consulta anterior antes
+    // de que la consulta real del grupo recién elegido resolviera).
+    setState((prev) => ({ ...prev, loading: true }))
     fetcher()
       .then((data) => {
         if (!cancelled) setState({ data, loading: false, error: null, unauthorized: false })

@@ -28,6 +28,9 @@ import { GrupoEditPage } from '@/pages/GrupoEditPage'
 import { AsignaturaEditPage } from '@/pages/AsignaturaEditPage'
 import { GrupoAsignaturaEditPage } from '@/pages/GrupoAsignaturaEditPage'
 import { PlantelPage } from '@/pages/PlantelPage'
+import { AsistenciaListPage } from '@/pages/AsistenciaListPage'
+import { AsistenciaCapturaPage } from '@/pages/AsistenciaCapturaPage'
+import { AsistenciaResumenPage } from '@/pages/AsistenciaResumenPage'
 
 function App() {
   return (
@@ -63,6 +66,9 @@ function App() {
         <Route path="/alumno/:idAlumno/expediente-academico" element={<ExpedienteAcademicoDetailPage />} />
         <Route path="/alumno/:idAlumno/expediente-academico/editar" element={<ExpedienteAcademicoEditPage />} />
         <Route path="/expediente-academico/nuevo" element={<ExpedienteAcademicoCreatePage />} />
+        <Route path="/alumno/:idAlumno/asistencia-resumen" element={<AsistenciaResumenPage />} />
+        <Route path="/asistencia" element={<AsistenciaListPage />} />
+        <Route path="/asistencia/capturar" element={<AsistenciaCapturaPage />} />
       </Routes>
     </BrowserRouter>
   )

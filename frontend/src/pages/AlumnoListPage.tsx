@@ -190,6 +190,12 @@ export function AlumnoListPage() {
                         >
                           Ver expediente
                         </Link>
+                        <Link
+                          className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"
+                          to={`/alumno/${a.id_alumno}/asistencia-resumen`}
+                        >
+                          Ver asistencia
+                        </Link>
                         {puedeEscribir && (
                           <Link
                             className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"

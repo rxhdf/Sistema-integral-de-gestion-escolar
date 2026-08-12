@@ -61,5 +61,15 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
     active: activeHref === '/calificacion',
     href: '/calificacion',
   })
+  // Asistencia (ADR-008, post-MVP): mismo criterio que Alumnos/Plantel --
+  // docente tiene captura+lectura, directivo/admin solo lectura (nunca
+  // corrigen, confirmado con el negocio) -- visible a los 3 roles, el
+  // botón de captura se oculta dentro de la propia página, no en el nav.
+  items.push({
+    icon: 'event_available',
+    label: 'Asistencia',
+    active: activeHref === '/asistencia',
+    href: '/asistencia',
+  })
   return items
 }
