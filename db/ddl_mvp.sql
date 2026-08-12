@@ -210,6 +210,32 @@ CREATE TABLE auditoria_calificacion (
     fecha_evento            TIMESTAMP NOT NULL DEFAULT now()
 );
 
+-- ---------------------------------------------------------------------
+-- 12. ASISTENCIA (post-MVP, primera feature nueva — ver ADR-008 y
+-- docs/data_dictionary/asistencia.md, diseño cerrado en sesión).
+-- Registro por sesión individual: una fila por alumno x grupo_asignatura
+-- x fecha de clase. Captura en lote desde el service (un POST inserta
+-- todas las filas del grupo de una vez, en una sola transacción), pero
+-- el UNIQUE de abajo aplica por fila, no por lote.
+-- ---------------------------------------------------------------------
+CREATE TABLE asistencia (
+    id_asistencia        SERIAL PRIMARY KEY,
+    id_alumno            INT NOT NULL REFERENCES alumno(id_alumno),
+    id_grupo_asig        INT NOT NULL REFERENCES grupo_asignatura(id_grupo_asig),
+    fecha_sesion         DATE NOT NULL,
+    estado               VARCHAR(10) NOT NULL CHECK (estado IN ('presente', 'ausente', 'retardo')),
+    id_personal_registro INT NOT NULL REFERENCES personal(id_personal),
+    fecha_captura        TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT uq_asistencia_alumno_grupo_asig_fecha UNIQUE (id_alumno, id_grupo_asig, fecha_sesion)
+);
+
+-- Índices de rendimiento (no de integridad -- el UNIQUE de arriba ya
+-- cubre el caso de integridad, y de paso indexa (id_alumno, id_grupo_asig,
+-- fecha_sesion) en ese orden, pero no sirve para "todas las faltas de
+-- este alumno" ni para "la sesión de este grupo hoy" por sí solo).
+CREATE INDEX idx_asistencia_alumno_periodo ON asistencia (id_alumno);
+CREATE INDEX idx_asistencia_grupo_fecha ON asistencia (id_grupo_asig, fecha_sesion);
+
 -- =====================================================================
 -- VISTAS CALCULADAS (evitan columnas mantenidas a mano — ver ADR heredado)
 -- =====================================================================
@@ -417,6 +443,65 @@ CREATE POLICY auditoria_calificacion_insert ON auditoria_calificacion
             WHEN 'captura'    THEN id_personal_capturo  = app_current_personal_id()
             WHEN 'correccion' THEN id_personal_modifico = app_current_personal_id()
         END
+    );
+
+-- ---------------------------------------------------------------------
+-- ASISTENCIA: mismo patrón de scope que CALIFICACION, con una diferencia
+-- deliberada de matriz (docs/data_dictionary/asistencia.md): solo
+-- docente puede CAPTURAR (INSERT) -- directivo/admin nunca insertan,
+-- solo corrigen (UPDATE) lo ya capturado por el docente. calificacion sí
+-- permite directivo/admin en el mismo nivel de acceso que docente para
+-- lectura, pero para insert ambos esquemas coinciden: FOR INSERT exige
+-- rol = 'docente' en los dos casos.
+--
+-- asistencia_update no tiene WITH CHECK, igual que calificacion_update:
+-- el service solo cambia `estado`/`fecha_captura` sobre una fila ya
+-- existente (nunca reasigna id_alumno/id_grupo_asig/fecha_sesion), así
+-- que basta con USING para decidir qué filas son visibles/editables.
+-- "docente solo corrige lo que él mismo capturó" (matriz RBAC Nivel 1)
+-- coincide en la práctica con "docente solo corrige su propio
+-- grupo_asignatura" mientras exista un único docente por
+-- grupo_asignatura (UNIQUE en grupo_asignatura, pendiente de negocio si
+-- eso cambia -- ver CLAUDE.md) — si se permite más de un docente por
+-- grupo_asignatura en el futuro, esta política debe revisarse para
+-- comparar contra id_personal_registro explícitamente, no solo contra
+-- id_docente de grupo_asignatura.
+-- ---------------------------------------------------------------------
+ALTER TABLE asistencia ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY asistencia_select ON asistencia
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
+    );
+
+-- id_personal_registro = app_current_personal_id() en el WITH CHECK:
+-- mismo motivo anti-suplantación que auditoria_calificacion_insert --
+-- un docente no puede insertar una fila y adjudicarle la captura a otro
+-- id_personal, aunque el id_grupo_asig sí sea suyo.
+CREATE POLICY asistencia_insert ON asistencia
+    FOR INSERT
+    WITH CHECK (
+        app_current_rol() = 'docente'
+        AND id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
+        AND id_personal_registro = app_current_personal_id()
+    );
+
+CREATE POLICY asistencia_update ON asistencia
+    FOR UPDATE
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_grupo_asig IN (
+            SELECT id_grupo_asig FROM grupo_asignatura
+            WHERE id_docente = app_current_personal_id()
+        )
     );
 
 -- ---------------------------------------------------------------------
