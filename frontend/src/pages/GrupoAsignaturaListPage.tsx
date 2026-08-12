@@ -117,6 +117,7 @@ export function GrupoAsignaturaListPage() {
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Grupo</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Asignatura</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Docente</th>
+                  {puedeCrear && <th scope="col" className="p-4 text-label-md font-label-md text-secondary" />}
                 </tr>
               </thead>
               <tbody>
@@ -125,6 +126,16 @@ export function GrupoAsignaturaListPage() {
                     <td className="p-4 text-body-md font-body-md text-on-surface">{nombreGrupo(ga.id_grupo)}</td>
                     <td className="p-4 text-body-md font-body-md text-on-surface">{nombreAsignatura(ga.id_asignatura)}</td>
                     <td className="p-4 text-body-md font-body-md text-on-surface">{nombreDocente(ga.id_docente)}</td>
+                    {puedeCrear && (
+                      <td className="p-4">
+                        <Link
+                          className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"
+                          to={`/grupo-asignatura/${ga.id_grupo_asig}/editar`}
+                        >
+                          Editar
+                        </Link>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

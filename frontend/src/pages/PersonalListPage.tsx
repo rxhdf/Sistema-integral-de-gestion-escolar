@@ -29,6 +29,7 @@ export function PersonalListPage() {
   }
 
   const puedeCrear = personal.data?.rol === 'admin'
+  const puedeEditar = personal.data?.rol === 'admin'
 
   return (
     <DashboardShell
@@ -71,6 +72,7 @@ export function PersonalListPage() {
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Correo</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Rol</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Estatus</th>
+                  {puedeEditar && <th scope="col" className="p-4 text-label-md font-label-md text-secondary" />}
                 </tr>
               </thead>
               <tbody>
@@ -92,6 +94,16 @@ export function PersonalListPage() {
                         {p.estatus}
                       </span>
                     </td>
+                    {puedeEditar && (
+                      <td className="p-4">
+                        <Link
+                          className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"
+                          to={`/personal/${p.id_personal}/editar`}
+                        >
+                          Editar
+                        </Link>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

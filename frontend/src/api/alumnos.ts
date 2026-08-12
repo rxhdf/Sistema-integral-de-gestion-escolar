@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/api/client'
+import { apiGet, apiPost, apiPut } from '@/api/client'
 
 // Contrato real: app/domains/alumnos/schemas.py::AlumnoOutDocente (subconjunto
 // que ambos roles reciben -- nombre/apellido/matricula se usan para mostrar
@@ -106,4 +106,44 @@ export function getExpedienteAcademico(idAlumno: number): Promise<ExpedienteAcad
 // 409 (antes 500 crudo, corregido en esta entrega).
 export function postExpedienteAcademico(data: ExpedienteAcademicoCreate): Promise<ExpedienteAcademicoOut> {
   return apiPost<ExpedienteAcademicoOut>('/expediente-academico', data)
+}
+
+// Contrato real: app/domains/alumnos/schemas.py::AlumnoUpdate. Sin curp
+// (no editable aquí).
+export interface AlumnoUpdate {
+  id_grupo?: number | null
+  matricula?: string
+  nombre?: string
+  apellido_paterno?: string
+  apellido_materno?: string | null
+  fecha_nacimiento?: string
+  sexo?: string | null
+  email?: string | null
+  telefono_personal?: string | null
+  estatus?: string
+  fecha_baja?: string | null
+}
+
+// Rol(es): X, A -- ficha 28. matricula UNIQUE -> 409 (corregido en esta
+// entrega, igual que el POST).
+export function putAlumno(idAlumno: number, data: AlumnoUpdate): Promise<AlumnoRow> {
+  return apiPut<AlumnoRow>(`/alumno/${idAlumno}`, data)
+}
+
+export interface ExpedienteAcademicoUpdate {
+  escuela_procedencia?: string | null
+  promedio_secundaria?: number | null
+  promedio_actual?: number | null
+  situacion_academica?: 'regular' | 'irregular' | 'condicionado'
+}
+
+// Rol(es): X, A -- ficha 29. Sin riesgo de 409 (sin UNIQUE en los campos
+// editables). promedio_actual normalmente lo recalcula el backend al
+// capturar/corregir una calificación (fn_actualizar_promedio_actual) --
+// editarlo aquí lo sobrescribe hasta la siguiente captura.
+export function putExpedienteAcademico(
+  idAlumno: number,
+  data: ExpedienteAcademicoUpdate,
+): Promise<ExpedienteAcademicoOut> {
+  return apiPut<ExpedienteAcademicoOut>(`/expediente-academico/${idAlumno}`, data)
 }

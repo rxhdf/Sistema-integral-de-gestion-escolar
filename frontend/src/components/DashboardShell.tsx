@@ -51,7 +51,11 @@ export function DashboardShell({ personal, navItems, greetingSubtitle, onLogout,
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 pl-4 border-l border-surface-variant">
             {personal && (
-              <>
+              <Link
+                className="flex items-center gap-3 rounded-md hover:bg-surface-container-high transition-colors p-1 -m-1"
+                to="/perfil"
+                aria-label="Ver mi perfil"
+              >
                 <div className="text-right hidden sm:block">
                   <div className="text-label-md font-label-md">
                     {personal.nombre} {personal.apellido_paterno}
@@ -59,12 +63,12 @@ export function DashboardShell({ personal, navItems, greetingSubtitle, onLogout,
                   <div className="text-label-sm font-label-sm text-secondary capitalize">{personal.rol}</div>
                 </div>
                 <div
-                  aria-label={`Avatar de ${personal.nombre} ${personal.apellido_paterno}`}
+                  aria-hidden="true"
                   className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed-variant border border-surface-variant flex items-center justify-center text-label-sm font-label-sm font-bold"
                 >
                   {getInitials(personal.nombre, personal.apellido_paterno)}
                 </div>
-              </>
+              </Link>
             )}
           </div>
         </div>

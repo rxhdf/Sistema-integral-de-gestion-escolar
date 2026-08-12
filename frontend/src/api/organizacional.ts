@@ -49,3 +49,40 @@ export function postPeriodoSemestral(data: PeriodoSemestralCreate): Promise<Peri
 export function putPeriodoSemestralActivo(idPeriodo: number, activo: boolean): Promise<PeriodoSemestralOut> {
   return apiPut<PeriodoSemestralOut>(`/periodo-semestral/${idPeriodo}`, { activo })
 }
+
+// Contrato real: app/domains/organizacional/schemas.py (PlantelOut/Update).
+// Fichas 30-31 -- sin POST a propósito: el MVP es de un solo plantel, la
+// fila se crea por seed/migración, nunca vía API.
+export interface PlantelOut {
+  id_plantel: number
+  clave_plantel: string
+  nombre_plantel: string
+  municipio: string
+  estado: string
+  domicilio: string | null
+  telefono: string | null
+  email: string | null
+  estatus: string
+}
+
+export interface PlantelUpdate {
+  clave_plantel?: string
+  nombre_plantel?: string
+  municipio?: string
+  estado?: string
+  domicilio?: string | null
+  telefono?: string | null
+  email?: string | null
+  estatus?: string
+}
+
+// GET /plantel devuelve list[PlantelOut] -- técnicamente una lista de 1
+// elemento, la única fila del MVP (mismo razonamiento que el PUT sin {id}).
+export function getPlantel(): Promise<PlantelOut[]> {
+  return apiGet<PlantelOut[]>('/plantel')
+}
+
+// Rol(es): X, A -- ficha 31. Sin {id_plantel} en el path -- única fila.
+export function putPlantel(data: PlantelUpdate): Promise<PlantelOut> {
+  return apiPut<PlantelOut>('/plantel', data)
+}

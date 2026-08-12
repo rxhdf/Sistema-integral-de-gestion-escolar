@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/api/client'
+import { apiGet, apiPost, apiPut } from '@/api/client'
 
 type Semestre = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -82,4 +82,46 @@ export function getGrupoAsignaturas(): Promise<GrupoAsignaturaOut[]> {
 // - uq_grupo_asignatura_periodo duplicado -> 409 (corregido en esta entrega).
 export function postGrupoAsignatura(data: GrupoAsignaturaCreate): Promise<GrupoAsignaturaOut> {
   return apiPost<GrupoAsignaturaOut>('/grupo-asignatura', data)
+}
+
+// Contrato real: app/domains/academico/schemas.py::GrupoUpdate/AsignaturaUpdate/
+// GrupoAsignaturaUpdate. Ediciones parciales (fichas 25-27).
+export interface GrupoUpdate {
+  id_periodo?: number
+  semestre?: Semestre
+  nombre_grupo?: string
+  capacidad_maxima?: number | null
+}
+
+// Rol(es): X, A -- ficha 25. uq_grupo_nombre_periodo -> 409 (corregido en
+// esta entrega, igual que el POST).
+export function putGrupo(idGrupo: number, data: GrupoUpdate): Promise<GrupoOut> {
+  return apiPut<GrupoOut>(`/grupo/${idGrupo}`, data)
+}
+
+export interface AsignaturaUpdate {
+  nombre?: string
+  semestre?: Semestre
+  activa?: boolean
+}
+
+// Rol(es): X, A -- ficha 26. Sin riesgo de 409: clave_asignatura (única
+// UNIQUE de la entidad) no es editable aquí.
+export function putAsignatura(idAsignatura: number, data: AsignaturaUpdate): Promise<AsignaturaOut> {
+  return apiPut<AsignaturaOut>(`/asignatura/${idAsignatura}`, data)
+}
+
+export interface GrupoAsignaturaUpdate {
+  id_docente?: number
+  id_periodo?: number
+}
+
+// Rol(es): X, A -- ficha 27. Mismos dos rechazos que el POST (ficha 15):
+// id_docente inválido -> 400, uq_grupo_asignatura_periodo -> 409 (corregido
+// en esta entrega).
+export function putGrupoAsignatura(
+  idGrupoAsig: number,
+  data: GrupoAsignaturaUpdate,
+): Promise<GrupoAsignaturaOut> {
+  return apiPut<GrupoAsignaturaOut>(`/grupo-asignatura/${idGrupoAsig}`, data)
 }

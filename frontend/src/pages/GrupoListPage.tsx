@@ -69,6 +69,7 @@ export function GrupoListPage() {
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Nombre</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Semestre</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Capacidad máxima</th>
+                  {puedeCrear && <th scope="col" className="p-4 text-label-md font-label-md text-secondary" />}
                 </tr>
               </thead>
               <tbody>
@@ -77,6 +78,16 @@ export function GrupoListPage() {
                     <td className="p-4 text-body-md font-body-md text-on-surface">{g.nombre_grupo}</td>
                     <td className="p-4 text-body-md font-body-md text-on-surface">{g.semestre}</td>
                     <td className="p-4 text-body-md font-body-md text-on-surface">{g.capacidad_maxima ?? '—'}</td>
+                    {puedeCrear && (
+                      <td className="p-4">
+                        <Link
+                          className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"
+                          to={`/grupo/${g.id_grupo}/editar`}
+                        >
+                          Editar
+                        </Link>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

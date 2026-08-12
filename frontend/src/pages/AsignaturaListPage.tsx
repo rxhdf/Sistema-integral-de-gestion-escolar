@@ -70,6 +70,7 @@ export function AsignaturaListPage() {
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Nombre</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Semestre</th>
                   <th scope="col" className="p-4 text-label-md font-label-md text-secondary">Estado</th>
+                  {puedeCrear && <th scope="col" className="p-4 text-label-md font-label-md text-secondary" />}
                 </tr>
               </thead>
               <tbody>
@@ -89,6 +90,16 @@ export function AsignaturaListPage() {
                         {a.activa ? 'Activa' : 'Inactiva'}
                       </span>
                     </td>
+                    {puedeCrear && (
+                      <td className="p-4">
+                        <Link
+                          className="min-h-[44px] inline-flex items-center px-sm py-xs rounded-md border border-outline-variant font-label-md text-label-md text-on-surface hover:bg-surface-container"
+                          to={`/asignatura/${a.id_asignatura}/editar`}
+                        >
+                          Editar
+                        </Link>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

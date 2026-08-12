@@ -78,32 +78,42 @@ export function ExpedienteAcademicoDetailPage() {
             ))}
           </div>
         ) : expediente.data ? (
-          <dl className="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 space-y-4">
-            <div>
-              <dt className="font-label-md text-label-md text-secondary">Situación académica</dt>
-              <dd className="font-body-lg text-body-lg text-on-surface">
-                {SITUACION_LABEL[expediente.data.situacion_academica]}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-label-md text-label-md text-secondary">Escuela de procedencia</dt>
-              <dd className="font-body-lg text-body-lg text-on-surface">
-                {expediente.data.escuela_procedencia ?? 'Sin capturar'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-label-md text-label-md text-secondary">Promedio de secundaria</dt>
-              <dd className="font-body-lg text-body-lg text-on-surface">
-                {expediente.data.promedio_secundaria ?? 'Sin capturar'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-label-md text-label-md text-secondary">Promedio actual</dt>
-              <dd className="font-body-lg text-body-lg text-on-surface">
-                {expediente.data.promedio_actual ?? 'Sin capturar'}
-              </dd>
-            </div>
-          </dl>
+          <>
+            <dl className="bg-surface-container-lowest border border-surface-variant rounded-xl p-6 space-y-4">
+              <div>
+                <dt className="font-label-md text-label-md text-secondary">Situación académica</dt>
+                <dd className="font-body-lg text-body-lg text-on-surface">
+                  {SITUACION_LABEL[expediente.data.situacion_academica]}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-label-md text-label-md text-secondary">Escuela de procedencia</dt>
+                <dd className="font-body-lg text-body-lg text-on-surface">
+                  {expediente.data.escuela_procedencia ?? 'Sin capturar'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-label-md text-label-md text-secondary">Promedio de secundaria</dt>
+                <dd className="font-body-lg text-body-lg text-on-surface">
+                  {expediente.data.promedio_secundaria ?? 'Sin capturar'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-label-md text-label-md text-secondary">Promedio actual</dt>
+                <dd className="font-body-lg text-body-lg text-on-surface">
+                  {expediente.data.promedio_actual ?? 'Sin capturar'}
+                </dd>
+              </div>
+            </dl>
+            {puedeCrear && (
+              <Link
+                className="inline-flex items-center gap-xs py-sm px-md rounded-md font-label-md text-label-md text-on-primary bg-primary-container hover:bg-on-primary-fixed-variant transition-colors min-h-[48px]"
+                to={`/alumno/${idAlumno}/expediente-academico/editar`}
+              >
+                Editar expediente
+              </Link>
+            )}
+          </>
         ) : null}
       </section>
     </DashboardShell>

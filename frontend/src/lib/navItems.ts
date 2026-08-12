@@ -12,6 +12,10 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
   const esDirectivoOAdmin = rol === 'directivo' || rol === 'admin'
   const items: NavItem[] = [
     { icon: 'dashboard', label: 'Dashboard', active: activeHref === '/dashboard', href: '/dashboard' },
+    // Plantel: igual que Alumnos, docente tiene R (matriz RBAC Nivel 1) --
+    // visible a los 3 roles. Fichas 30-31, sin nav propio hasta esta
+    // entrega (PlantelPage.tsx combina detalle+edición en una pantalla).
+    { icon: 'business', label: 'Plantel', active: activeHref === '/plantel', href: '/plantel' },
   ]
   if (esDirectivoOAdmin) {
     items.push(
