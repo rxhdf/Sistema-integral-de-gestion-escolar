@@ -36,18 +36,19 @@ mismo patrón de variables de entorno que usa la suite de tests
 corre fuera de la red de docker-compose):
 
 ```bash
-export DATABASE_URL_MIGRATIONS=postgresql://sige_migrator:local_migrator_pw@localhost:5432/sige
-export DATABASE_URL=postgresql://sige_app:local_app_pw@localhost:5432/sige
-export JWT_SECRET_KEY=local_test_secret_key_do_not_use_in_prod
+export DATABASE_URL_MIGRATIONS=postgresql://sige_migrator:<tu_DB_MIGRATOR_PASSWORD>@localhost:5432/sige
+export DATABASE_URL=postgresql://sige_app:<tu_DB_APP_PASSWORD>@localhost:5432/sige
+export JWT_SECRET_KEY=<cualquier_valor_de_dev>
 python3 db/seed_dev.py
 ```
 
-(Ajusta usuario/password si tu `.env` local los cambió — son los mismos
-`DB_MIGRATOR_USER`/`DB_MIGRATOR_PASSWORD`/`DB_APP_USER`/`DB_APP_PASSWORD`
-que usa `docker-compose.yml`. `JWT_SECRET_KEY` hace falta aunque el script
-no emite tokens: importa `app.core.security` para reusar `hash_password`,
-que a su vez importa `app.core.config`, que exige esa variable al cargar
-— cualquier valor de dev sirve, usa el mismo que `.env`.)
+(Usa los mismos `DB_MIGRATOR_PASSWORD`/`DB_APP_PASSWORD` que tu `.env`
+local — son los mismos `DB_MIGRATOR_USER`/`DB_MIGRATOR_PASSWORD`/
+`DB_APP_USER`/`DB_APP_PASSWORD` que usa `docker-compose.yml`.
+`JWT_SECRET_KEY` hace falta aunque el script no emite tokens: importa
+`app.core.security` para reusar `hash_password`, que a su vez importa
+`app.core.config`, que exige esa variable al cargar — cualquier valor de
+dev sirve, usa el mismo que `.env`.)
 
 El script corre como `sige_migrator` (owner, bypassea RLS) — igual que
 `tests/conftest.py` — porque antes de que exista una sesión autenticada,

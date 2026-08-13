@@ -1,7 +1,14 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-alembic
-psycopg2-binary
-pyjwt
-bcrypt
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+sqlalchemy==2.0.52
+alembic==1.19.1
+# psycopg2-binary trae su propio libpq/OpenSSL empaquetado -- upstream no
+# lo recomienda para producción porque puede quedar con OpenSSL viejo si no
+# se reinstala. Se mantiene por simplicidad de build (evita agregar gcc/
+# libpq-dev al Dockerfile); el gate de pip-audit en CI
+# (.github/workflows/ci.yml) detecta si esta wheel recibe un CVE conocido.
+# Migrar a psycopg2 (requiere build deps) si se necesita control fino sobre
+# la versión de OpenSSL antes de producción.
+psycopg2-binary==2.9.12
+pyjwt==2.13.0
+bcrypt==5.0.0

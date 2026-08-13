@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, LoginError } from '@/api/auth'
 import { setToken } from '@/auth/token'
-import cobaoLogo from '@/assets/images/cobao_logo.svg'
+import cobaoLogo from '@/assets/cobao_logo.svg'
 
 export function LoginPage() {
   const navigate = useNavigate()

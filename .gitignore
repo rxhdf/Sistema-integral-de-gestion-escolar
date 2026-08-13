@@ -8,3 +8,14 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .DS_Store
+
+# key/cert material and cloud credentials should never be committed
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+credentials.json
+service-account*.json

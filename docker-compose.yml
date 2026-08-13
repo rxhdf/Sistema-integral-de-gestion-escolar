@@ -24,7 +24,7 @@ services:
       # de runtime sige_app; sige_migrator ya existe vía POSTGRES_USER.
       - ./db/init/01_create_app_role.sh:/docker-entrypoint-initdb.d/01_create_app_role.sh:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

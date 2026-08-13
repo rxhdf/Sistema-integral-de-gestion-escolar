@@ -10,10 +10,10 @@ import { buildNavItems } from '@/lib/navItems'
 import { useApiQuery } from '@/lib/useApiQuery'
 
 const QUICK_ACCESS_ITEMS = [
-  { icon: 'person_search', title: 'Gestión de alumnos', description: 'Altas, bajas y expedientes' },
-  { icon: 'assignment_ind', title: 'Gestión de personal', description: 'Docentes y administrativos' },
-  { icon: 'account_tree', title: 'Estructura académica', description: 'Planes de estudio y grupos' },
-  { icon: 'grading', title: 'Calificaciones', description: 'Consultar y corregir actas' },
+  { icon: 'person_search', title: 'Gestión de alumnos', description: 'Altas, bajas y expedientes', to: '/alumno' },
+  { icon: 'assignment_ind', title: 'Gestión de personal', description: 'Docentes y administrativos', to: '/personal' },
+  { icon: 'account_tree', title: 'Estructura académica', description: 'Planes de estudio y grupos', to: '/grupo' },
+  { icon: 'grading', title: 'Calificaciones', description: 'Consultar y corregir actas', to: '/calificacion' },
 ]
 
 export function DashboardPage() {
@@ -76,10 +76,10 @@ export function DashboardPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {QUICK_ACCESS_ITEMS.map((item) => (
-              <button
+              <Link
                 key={item.title}
                 className="flex items-center gap-4 p-4 bg-surface-container-lowest border border-surface-variant rounded-lg hover:border-primary hover:shadow-[0_0_0_1px_rgba(181,0,11,1)] transition-all text-left group"
-                type="button"
+                to={item.to}
               >
                 <div className="p-3 bg-surface-container rounded-full group-hover:bg-primary-fixed transition-colors">
                   <span className="material-symbols-outlined text-secondary group-hover:text-primary">
@@ -90,7 +90,7 @@ export function DashboardPage() {
                   <h3 className="text-label-md font-label-md font-bold text-on-surface">{item.title}</h3>
                   <p className="text-label-sm font-label-sm text-secondary">{item.description}</p>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </section>

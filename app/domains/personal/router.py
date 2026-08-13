@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,8 @@ from app.domains.personal.schemas import (
     TokenResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 auth_router = APIRouter(prefix="/auth")
 
@@ -27,6 +31,8 @@ auth_router = APIRouter(prefix="/auth")
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     result = authenticate_personal(db, payload.email_institucional, payload.password)
     if result is None:
+        # Nunca loguear payload.password -- solo el email intentado.
+        logger.warning("Intento de login fallido para %s", payload.email_institucional)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",

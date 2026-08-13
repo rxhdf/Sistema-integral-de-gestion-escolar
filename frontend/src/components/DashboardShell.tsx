@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import cobaoLogo from '@/assets/images/cobao_logo.svg'
+import cobaoLogo from '@/assets/cobao_logo.svg'
 import type { PersonalMe } from '@/api/personal'
 import { getInitials } from '@/lib/initials'
 

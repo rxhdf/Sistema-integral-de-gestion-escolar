@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import JWT_ALGORITHM, JWT_EXPIRE_MINUTES, JWT_SECRET_KEY
 from app.db.session import get_db
+
+logger = logging.getLogger(__name__)
 
 Rol = Literal["docente", "directivo", "admin"]
 
@@ -113,6 +116,12 @@ def get_current_personal(
 def require_roles(*roles: Rol):
     def checker(current: CurrentPersonal = Depends(get_current_personal)) -> CurrentPersonal:
         if current.rol not in roles:
+            logger.warning(
+                "Acceso denegado: id_personal=%s rol=%s intentó una operación que requiere %s",
+                current.id_personal,
+                current.rol,
+                roles,
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No autorizado para esta operación",

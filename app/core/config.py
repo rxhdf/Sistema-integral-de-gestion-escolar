@@ -15,3 +15,13 @@ if not JWT_SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY está vacía — debe traer un valor real")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = int(os.environ.get("JWT_EXPIRE_MINUTES", "60"))
+
+# Origins extra para CORS (ej. el hostname del túnel de Cloudflare vigente,
+# o un dominio de producción) además de los orígenes de dev (localhost:5173)
+# que app/main.py siempre permite. Lista separada por comas. Vacío por
+# default: nunca hornear un hostname de túnel (efímero) en el código fuente.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
