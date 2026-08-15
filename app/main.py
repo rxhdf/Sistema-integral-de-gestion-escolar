@@ -14,6 +14,7 @@ from app.domains.control_escolar.router import router as control_escolar_router
 from app.domains.dashboard.router import router as dashboard_router
 from app.domains.organizacional.router import router as organizacional_router
 from app.domains.personal.router import auth_router, router as personal_router
+from app.domains.reportes.router import router as reportes_router
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ app.include_router(academico_router, tags=["academico"])
 app.include_router(alumnos_router, tags=["alumnos"])
 app.include_router(control_escolar_router, tags=["control_escolar"])
 app.include_router(asistencia_router, tags=["asistencia"])
+app.include_router(reportes_router, tags=["reportes"])
 app.include_router(dashboard_router, tags=["dashboard"])
 
 
