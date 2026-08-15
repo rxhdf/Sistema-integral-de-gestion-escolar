@@ -59,6 +59,8 @@
 
 ## Task 1: DDL + Alembic migration for `reporte_incidencia` and `fn_alumno_buscar_docente`
 
+Before this task starts, a pre-existing bug (unrelated to this feature, found while preparing this plan's environment) was already fixed on this branch: the initial migration `7460fa835be8` used to read the *live* `db/ddl_mvp.sql` at migration-run-time, which broke fresh installs once later features (like `Asistencia`) appended to that file — a truly fresh volume would replay the CURRENT file as "initial schema" and then collide with the later incremental migration that adds the same table again. It now reads a frozen snapshot (`db/migrations_snapshots/ddl_mvp_at_7460fa835be8.sql`) instead. This is already committed; nothing in this task needs to touch it, but don't be surprised to see it in `git log` — it's what makes a fresh `docker-compose down -v && up --build` work at all for Step 3 below.
+
 **Files:**
 - Create: `app/db/migrations/versions/b7c2e4f19a03_reporte_incidencia_table_and_rls.py`
 - Modify: `db/ddl_mvp.sql`
@@ -101,7 +103,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 _CREATE_TABLE = """
 CREATE TABLE reporte_incidencia (
-    id_reporte_incidencia INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_reporte_incidencia SERIAL PRIMARY KEY,
     id_alumno             INT NOT NULL REFERENCES alumno(id_alumno),
     id_personal_reporta   INT NOT NULL REFERENCES personal(id_personal),
     fecha_incidente       DATE NOT NULL,
@@ -183,14 +185,6 @@ def downgrade() -> None:
     # tabla junto con ella -- no hace falta un DROP POLICY/INDEX aparte.
     op.execute(_DROP_TABLE)
 ```
-
-Note: `id_reporte_incidencia` uses `GENERATED ALWAYS AS IDENTITY` (Postgres 16 native identity column) rather than `SERIAL` — functionally equivalent to every other PK in this schema (`SERIAL`), but this plan keeps them consistent with the rest of `db/ddl_mvp.sql`, so **use `SERIAL PRIMARY KEY`** instead to match `asistencia`/`calificacion`/every other table. Correct version of the column:
-
-```sql
-    id_reporte_incidencia SERIAL PRIMARY KEY,
-```
-
-Apply that correction directly in the migration file above before running it (this note exists only because it's easy to default to `IDENTITY` out of habit — the codebase convention is `SERIAL`, no functional difference for this project).
 
 - [ ] **Step 2: Update `db/ddl_mvp.sql`**
 
@@ -714,7 +708,7 @@ class AlumnoBusquedaDocenteOut(BaseModel):
     apellido_materno: str | None
 ```
 
-(Confirm `BaseModel` is already imported at the top of the file — it is, used by every other schema there.)
+(`BaseModel` is already imported at the top of the file, used by every other schema there — no import change needed.)
 
 - [ ] **Step 2: Add repository function to `app/domains/alumnos/repository.py`**
 
@@ -733,7 +727,7 @@ def buscar_alumno_plantel(db: Session, search: str) -> list[dict]:
     return [dict(r) for r in rows]
 ```
 
-Confirm `text` is imported from `sqlalchemy` at the top of the file — if not already present, add it to the existing `from sqlalchemy import ...` line.
+`app/domains/alumnos/repository.py` currently starts with `from sqlalchemy import func, or_, select` — `text` is NOT in that list yet. Change that line to `from sqlalchemy import func, or_, select, text`.
 
 - [ ] **Step 3: Add service passthrough to `app/domains/alumnos/service.py`**
 
@@ -934,7 +928,9 @@ def test_update_delete_directo_bloqueado_por_rls(client, seed):
         db.rollback()
 ```
 
-Check `tests/test_academico.py::_crear_docente`'s exact signature before using it (already read: `_crear_docente(client, admin_headers, seed, email, curp, password)`, returns `id_personal`) — the test above matches it.
+`tests/test_academico.py::_crear_docente`'s exact signature is `_crear_docente(client, admin_headers, seed, email, curp, password)`, returns `id_personal` — the test above already matches it.
+
+`seed["ids"]` (from `tests/conftest.py`'s `seed` fixture) is a dict keyed by `email_institucional` (`SELECT email_institucional, id_personal FROM personal`), so `seed["ids"]["docente1@sige.test"]` and `seed["ids"]["admin1@sige.test"]` are valid as used above. The deactivated docente fixture's email is exactly `"docente.baja@sige.test"` with password `PASSWORD_DOCENTE_BAJA` (both already imported at the top of `tests/test_reporte_incidencia.py` in this plan's Step 1).
 
 Check `seed["ids"]` includes `"docente.baja@sige.test"` and `"admin1@sige.test"` keys — confirm by reading `tests/conftest.py`'s `seed` fixture body in full before running (only the first ~50 lines were read while building this plan); if the email differs from `docente.baja@sige.test`, adjust the test to the real value rather than guessing.
 
@@ -959,7 +955,7 @@ def test_buscar_plantel_directivo_forbidden_403(client, seed):
     assert resp.status_code == 403, resp.text
 ```
 
-Confirm `PASSWORD_ADMIN`, `PASSWORD_DOCENTE`, `PASSWORD_DIRECTIVO`, `auth_headers` are already imported at the top of `tests/test_alumnos.py` (they are, used by every other test in that file) and that `_post_alumno` accepts a `nombre` override kwarg via its existing `**overrides` parameter (confirmed in Task-gathering: `payload.update(overrides)`).
+`PASSWORD_ADMIN`, `PASSWORD_DOCENTE`, `PASSWORD_DIRECTIVO`, `auth_headers` are already imported at the top of `tests/test_alumnos.py`, used by every other test in that file — no import change needed. `_post_alumno(client, headers, seed, n=1, id_grupo=None, **overrides)` passes any extra kwarg straight into the payload via `payload.update(overrides)`, so `_post_alumno(client, admin_headers, seed, n=1, id_grupo=None, nombre="Zoe")` overrides just the `nombre` field and is valid as written above.
 
 - [ ] **Step 3: Run the full suite against real Postgres**
 
