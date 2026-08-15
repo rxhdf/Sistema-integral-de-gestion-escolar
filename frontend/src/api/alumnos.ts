@@ -157,3 +157,23 @@ export function putExpedienteAcademico(
 ): Promise<ExpedienteAcademicoOut> {
   return apiPut<ExpedienteAcademicoOut>(`/expediente-academico/${idAlumno}`, data)
 }
+
+// ADR-010: campos mínimos de identificación devueltos por
+// fn_alumno_buscar_docente -- deliberadamente más acotado que AlumnoRow
+// (sin curp/fecha_nacimiento/etc.), ya que esta búsqueda opera fuera del
+// scope normal de Alumno para un docente.
+export interface AlumnoBusquedaDocenteOut {
+  id_alumno: number
+  matricula: string
+  nombre: string
+  apellido_paterno: string
+  apellido_materno: string | null
+}
+
+// Rol(es): D únicamente (require_roles("docente")) -- búsqueda
+// plantel-completo respaldada por fn_alumno_buscar_docente (SECURITY
+// DEFINER, ADR-010), exclusiva para poder reportar una incidencia sobre
+// un alumno fuera del scope normal de GET /alumno.
+export function getAlumnoBuscarPlantel(search: string): Promise<AlumnoBusquedaDocenteOut[]> {
+  return apiGet<AlumnoBusquedaDocenteOut[]>(`/alumno/buscar-plantel?search=${encodeURIComponent(search)}`)
+}
