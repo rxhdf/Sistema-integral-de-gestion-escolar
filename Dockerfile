@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser alembic.ini .
 COPY --chown=appuser:appuser db/ddl_mvp.sql ./db/ddl_mvp.sql
+COPY --chown=appuser:appuser db/migrations_snapshots/ ./db/migrations_snapshots/
 
 USER appuser
 

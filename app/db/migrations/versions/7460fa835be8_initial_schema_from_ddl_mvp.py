@@ -16,6 +16,37 @@ $$ ... $$ y comentarios de linea, para no cortar el cuerpo de las
 funciones plpgsql) y cada sentencia se ejecuta por separado — así el log
 de `alembic upgrade` queda tan legible como el de psql.
 
+BUGFIX (2026-08-15, descubierto al preparar la validacion RLS de
+Reporte_Incidencia): esta migracion originalmente leia db/ddl_mvp.sql en
+vivo (_DDL_PATH apuntaba al archivo mutable del repo). Como db/ddl_mvp.sql
+se sigue actualizando en cada fase/feature nueva (Asistencia, Reporte_
+Incidencia, etc.) como "fuente de verdad legible para instalaciones
+nuevas" (ver CLAUDE.md), esa lectura en vivo hacia que un volumen
+realmente fresco (CI en un runner efimero, o el primer `docker-compose up`
+de un colaborador nuevo) ejecutara el contenido ACTUAL del archivo como
+"esquema inicial" — incluyendo tablas que en realidad las agrega una
+migracion incremental posterior (ej. `asistencia`, agregada por
+f14529da9262) — y esa migracion posterior fallaba con
+`DuplicateTable` porque la tabla ya existia. Reproducido de forma
+determinista: `docker-compose down -v && docker-compose up -d --build`
+sobre el HEAD de main sin ningun cambio de este plan — bug preexistente,
+no introducido por Reporte_Incidencia, pero bloqueaba su validacion de
+RLS (que sí exige un volumen realmente limpio, mismo patron que
+ADR-008/Fase 5).
+
+Fix: esta migracion ahora lee un snapshot CONGELADO de db/ddl_mvp.sql tal
+como estaba en el commit `55b0444` (cuando esta migracion se escribio,
+11 tablas del MVP, sin Asistencia ni nada posterior) —
+`db/migrations_snapshots/ddl_mvp_at_7460fa835be8.sql`, generado con
+`git show 55b0444:db/ddl_mvp.sql`. El archivo vivo `db/ddl_mvp.sql` sigue
+siendo la fuente de verdad legible del esquema COMPLETO actual (para
+instalar por fuera de Alembic, o como referencia humana) — pero cada
+migracion de Alembic, incluida esta, ahora solo aplica su propio
+incremento; el estado final de una cadena completa `alembic upgrade head`
+sobre un volumen fresco sigue siendo identico al de un volumen
+incrementalmente actualizado, que es la garantia que este archivo
+necesita, no "reflejar el DDL vivo palabra por palabra".
+
 Revision ID: 7460fa835be8
 Revises:
 Create Date: 2026-07-29 20:56:14.334829
@@ -37,7 +68,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 # app/db/migrations/versions/ -> app/db/migrations -> app/db -> app -> repo root
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_DDL_PATH = _REPO_ROOT / "db" / "ddl_mvp.sql"
+# Snapshot congelado, NO db/ddl_mvp.sql en vivo -- ver nota de bugfix arriba.
+_DDL_PATH = _REPO_ROOT / "db" / "migrations_snapshots" / "ddl_mvp_at_7460fa835be8.sql"
 
 _DOLLAR_TAG_RE = re.compile(r"\$[A-Za-z_]*\$")
 
