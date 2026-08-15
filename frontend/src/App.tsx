@@ -33,6 +33,7 @@ import { PlantelPage } from '@/pages/PlantelPage'
 import { AsistenciaListPage } from '@/pages/AsistenciaListPage'
 import { AsistenciaCapturaPage } from '@/pages/AsistenciaCapturaPage'
 import { AsistenciaResumenPage } from '@/pages/AsistenciaResumenPage'
+import { ReporteIncidenciaCapturaPage } from '@/pages/ReporteIncidenciaCapturaPage'
 
 function App() {
   return (
@@ -73,6 +74,7 @@ function App() {
         <Route path="/alumno/:idAlumno/asistencia-resumen" element={<AsistenciaResumenPage />} />
         <Route path="/asistencia" element={<AsistenciaListPage />} />
         <Route path="/asistencia/capturar" element={<AsistenciaCapturaPage />} />
+        <Route path="/reporte-incidencia/capturar" element={<ReporteIncidenciaCapturaPage />} />
       </Routes>
     </BrowserRouter>
   )

@@ -80,5 +80,17 @@ export function buildNavItems(rol: PersonalMe['rol'] | undefined, activeHref: st
     active: activeHref === '/asistencia',
     href: '/asistencia',
   })
+  // Reporte de incidencia (ADR-010): exclusivo de docente -- directivo/
+  // admin no tienen pantalla propia de captura (no crean reportes), solo
+  // consultan vía la sección "Incidencias" del Perfil de Análisis de
+  // Alumno, que ya tiene su propio nav item ("Análisis de alumno").
+  if (rol === 'docente') {
+    items.push({
+      icon: 'report',
+      label: 'Incidencias',
+      active: activeHref === '/reporte-incidencia/capturar',
+      href: '/reporte-incidencia/capturar',
+    })
+  }
   return items
 }
