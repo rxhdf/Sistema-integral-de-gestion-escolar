@@ -238,6 +238,26 @@ CREATE TABLE asistencia (
 CREATE INDEX idx_asistencia_alumno_periodo ON asistencia (id_alumno);
 CREATE INDEX idx_asistencia_grupo_fecha ON asistencia (id_grupo_asig, fecha_sesion);
 
+-- ---------------------------------------------------------------------
+-- 13. REPORTE_INCIDENCIA (post-MVP — ver ADR-010 y
+-- docs/data_dictionary/reporte-incidencia.md, diseño cerrado en sesión).
+-- Tabla inmutable: sin UPDATE/DELETE a nivel de RLS ni de API. Cualquier
+-- docente activo puede reportar sobre cualquier alumno del plantel, sin
+-- requerir grupo_asignatura (desviación deliberada respecto a
+-- Calificacion/Asistencia, ver ADR-010).
+-- ---------------------------------------------------------------------
+CREATE TABLE reporte_incidencia (
+    id_reporte_incidencia SERIAL PRIMARY KEY,
+    id_alumno             INT NOT NULL REFERENCES alumno(id_alumno),
+    id_personal_reporta   INT NOT NULL REFERENCES personal(id_personal),
+    fecha_incidente       DATE NOT NULL,
+    descripcion           TEXT NOT NULL,
+    fecha_registro        TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_reporte_incidencia_alumno ON reporte_incidencia (id_alumno);
+CREATE INDEX idx_reporte_incidencia_personal_reporta ON reporte_incidencia (id_personal_reporta);
+
 -- =====================================================================
 -- VISTAS CALCULADAS (evitan columnas mantenidas a mano — ver ADR heredado)
 -- =====================================================================
@@ -507,6 +527,40 @@ CREATE POLICY asistencia_update ON asistencia
     );
 
 -- ---------------------------------------------------------------------
+-- REPORTE_INCIDENCIA: a diferencia de CALIFICACION/ASISTENCIA, el INSERT
+-- no filtra por grupo_asignatura -- cualquier docente activo del plantel
+-- puede reportar sobre cualquier alumno (ADR-010). id_personal_reporta =
+-- app_current_personal_id() sigue siendo obligatorio (anti-suplantación,
+-- mismo propósito que asistencia_insert). El EXISTS contra personal.estatus
+-- es defensa en profundidad: el JWT no se revalida contra Personal.estatus
+-- en cada request (get_current_personal, app/core/security.py), así que
+-- un docente dado de baja después de emitido su token seguiría pasando
+-- require_roles("docente") hasta que expire -- esta política es quien
+-- realmente cierra ese hueco. Sin políticas de UPDATE/DELETE: tabla
+-- inmutable, mismo patrón que auditoria_calificacion.
+-- ---------------------------------------------------------------------
+ALTER TABLE reporte_incidencia ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY reporte_incidencia_select ON reporte_incidencia
+    FOR SELECT
+    USING (
+        app_current_rol() IN ('directivo', 'admin')
+        OR id_personal_reporta = app_current_personal_id()
+    );
+
+CREATE POLICY reporte_incidencia_insert ON reporte_incidencia
+    FOR INSERT
+    WITH CHECK (
+        app_current_rol() = 'docente'
+        AND id_personal_reporta = app_current_personal_id()
+        AND EXISTS (
+            SELECT 1 FROM personal
+            WHERE id_personal = app_current_personal_id()
+              AND estatus = 'activo'
+        )
+    );
+
+-- ---------------------------------------------------------------------
 -- Resto de tablas (PLANTEL, CICLO_ESCOLAR, PERIODO_SEMESTRAL, GRUPO,
 -- ASIGNATURA): sin RLS por fila (todo el contenido es del único plantel
 -- del MVP), pero si se filtran por rol a nivel de escritura vía checks
@@ -545,6 +599,41 @@ $$;
 -- se revoca y se otorga explícitamente solo a sige_app (ADR-007).
 REVOKE ALL ON FUNCTION fn_login_lookup(VARCHAR) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fn_login_lookup(VARCHAR) TO sige_app;
+
+-- =====================================================================
+-- BÚSQUEDA DE ALUMNO PARA DOCENTE — ADR-010
+-- Excepción puntual y acotada a RLS de `alumno`, mismo patrón que
+-- fn_login_lookup (ADR-007): un docente necesita buscar CUALQUIER alumno
+-- del plantel para Reporte_Incidencia, fuera de su scope normal
+-- (alumno_select lo limita a sus propios grupo_asignatura). Devuelve solo
+-- campos mínimos de identificación, y solo cuando app_current_rol() =
+-- 'docente' -- para cualquier otro rol, 0 filas. No modifica
+-- alumno_select ni ningún otro acceso existente a Alumno.
+-- =====================================================================
+CREATE OR REPLACE FUNCTION fn_alumno_buscar_docente(p_search VARCHAR)
+RETURNS TABLE (
+    id_alumno         INT,
+    matricula         VARCHAR(20),
+    nombre            VARCHAR(80),
+    apellido_paterno  VARCHAR(60),
+    apellido_materno  VARCHAR(60)
+)
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT a.id_alumno, a.matricula, a.nombre, a.apellido_paterno, a.apellido_materno
+    FROM alumno a
+    WHERE app_current_rol() = 'docente'
+      AND (
+        concat_ws(' ', a.nombre, a.apellido_paterno, a.apellido_materno) ILIKE '%' || p_search || '%'
+        OR a.curp = upper(p_search)
+      );
+$$;
+
+REVOKE ALL ON FUNCTION fn_alumno_buscar_docente(VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_alumno_buscar_docente(VARCHAR) TO sige_app;
 
 -- =====================================================================
 -- RECALCULO DE PROMEDIO_ACTUAL — ADR-005, gap encontrado en Fase 5
