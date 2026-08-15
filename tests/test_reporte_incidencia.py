@@ -33,12 +33,15 @@ def test_docente_crea_reporte_sobre_alumno_fuera_de_su_scope_201(client, seed):
     assert body["fecha_incidente"] == FECHA
 
 
-def test_docente_dado_de_baja_forbidden_403(client, seed):
+def test_docente_baja_no_obtiene_jwt_401(client, seed):
     # Un docente dado de baja nunca llega a tener un JWT: fn_login_lookup
     # (ADR-007) solo devuelve credenciales para estatus='activo', así que
     # el bloqueo real ocurre en /auth/login (401), no en este endpoint --
     # mismo comportamiento ya confirmado por
     # test_auth_rbac.py::test_login_baja_personal_cannot_authenticate_401.
+    # Esto NO prueba el 403 del endpoint /reporte-incidencia -- ver
+    # test_docente_desactivado_reusa_jwt_stale_bloqueado_por_rls_403 para eso
+    # (docente ya autenticado, dado de baja DESPUÉS, JWT stale reusado).
     resp = client.post(
         "/auth/login",
         json={"email_institucional": "docente.baja@sige.test", "password": PASSWORD_DOCENTE_BAJA},
@@ -167,3 +170,35 @@ def test_docente_desactivado_reusa_jwt_stale_bloqueado_por_rls_403(client, seed)
 
     resp = _post_reporte(client, docente_headers, alumno["id_alumno"])
     assert resp.status_code == 403, resp.text
+
+
+def test_fn_alumno_buscar_docente_guarda_rol_a_nivel_sql(client, seed):
+    # ADR-010 afirma que el WHERE app_current_rol() = 'docente' dentro de
+    # fn_alumno_buscar_docente es defensa en profundidad, independiente
+    # de require_roles("docente") en el router -- si alguien quitara ese
+    # gate HTTP en un refactor futuro, esta función seguiría bloqueando a
+    # cualquier otro rol. test_alumnos.py::test_buscar_plantel_directivo_
+    # forbidden_403 solo prueba la capa HTTP; este test llama la función
+    # SQL directo (mismo patrón que test_update_delete_directo_bloqueado_
+    # por_rls) para probar la capa SQL por separado.
+    import os
+
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.orm import sessionmaker
+
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    _post_alumno(client, admin_headers, seed, n=1, id_grupo=None, nombre="Zoe")
+
+    app_engine = create_engine(os.environ["DATABASE_URL"])
+    AppSession = sessionmaker(bind=app_engine)
+    with AppSession() as db:
+        db.execute(text("SELECT set_config('app.current_rol', 'directivo', true)"))
+        db.execute(
+            text("SELECT set_config('app.current_personal_id', :id, true)"),
+            {"id": str(seed["ids"]["directivo1@sige.test"])},
+        )
+        rows = db.execute(
+            text("SELECT * FROM fn_alumno_buscar_docente('Zoe')")
+        ).all()
+        assert rows == []
+        db.rollback()

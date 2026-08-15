@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ReporteIncidenciaCreate(BaseModel):
     id_alumno: int
     fecha_incidente: date
-    descripcion: str = Field(min_length=1)
+    descripcion: str = Field(min_length=1, max_length=2000)
 
 
 class ReporteIncidenciaOut(BaseModel):

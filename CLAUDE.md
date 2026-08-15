@@ -165,7 +165,7 @@ consolidado con evidencia real pegada.
 | Quién puede hacer qué (CRUD por rol, scope, campos ocultos) | `docs/rbac/matriz-rbac-mvp.md` |
 | Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-010.md` (ver resumen abajo) |
 | El DDL real, ya validado en Postgres 16 (tablas, RLS, funciones helper) | `db/ddl_mvp.sql` |
-| Cómo se traduce ese DDL a Alembic | `app/db/migrations/versions/7460fa835be8_initial_schema_from_ddl_mvp.py` |
+| Cómo se traduce ese DDL a Alembic | No hay una sola migración que lo haga: `7460fa835be8_initial_schema_from_ddl_mvp.py` aplica un snapshot CONGELADO (`db/migrations_snapshots/ddl_mvp_at_7460fa835be8.sql`) para las 11 tablas iniciales del MVP; cada tabla/política/función agregada después (Asistencia, `fn_login_lookup`, Reporte_Incidencia, etc.) tiene su propia migración incremental en `app/db/migrations/versions/`. `db/ddl_mvp.sql` es la referencia legible del esquema completo ACTUAL — ninguna migración lo re-deriva completo, y editarlo no afecta ninguna base de datos por sí solo. |
 | Cómo levantar todo local (roles, migración automática, /health) | `docker-compose.yml` + `docs/decisions/ADR-006.md` |
 | Evidencia de que RLS funciona con el rol real de runtime | `docs/validacion/rls-test-log-sige_app.md` |
 | Cierre y evidencia del gate de Fase 0 | `docs/validacion/fase-0-cierre.md` |

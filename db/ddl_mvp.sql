@@ -3,6 +3,16 @@
 -- Fuente: docs/data-dictionary/mvp.md + docs/rbac/matriz-rbac-mvp.md
 --         + ADR-001 a ADR-005
 -- Orden de creación: respeta dependencia real de FKs.
+--
+-- AVISO: este archivo es la referencia legible del esquema COMPLETO
+-- ACTUAL, pero editarlo NO afecta a ninguna base de datos, ni fresca ni
+-- existente. Una instalación fresca solo aplica el snapshot congelado
+-- (db/migrations_snapshots/ddl_mvp_at_7460fa835be8.sql, esquema inicial
+-- de 11 tablas) más cada migración incremental de Alembic desde entonces
+-- (ver app/db/migrations/versions/ — ej. f14529da9262 para Asistencia,
+-- b7c2e4f19a03 para Reporte_Incidencia). Cualquier cambio de esquema
+-- nuevo necesita su propia migración incremental; sin eso, este archivo
+-- se desincroniza silenciosamente de la base de datos real.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------

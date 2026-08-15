@@ -28,6 +28,7 @@ gestión de cuentas de `Personal`.
 | `Expediente_Academico` | R (campos limitados, ver Nivel 3) | C, R, U | C, R, U |
 | `Calificacion` | C, R, U (solo de sus `Grupo_Asignatura`) | R, U (puede corregir calificación ya capturada por docente) | R, U (mismo alcance que directivo) |
 | `Asistencia` (post-MVP, ADR-008) | C, R, U (solo de sus `Grupo_Asignatura`, ver nota) | R (mismo alcance que `Calificacion`) | R (mismo alcance que `Calificacion`) |
+| `Reporte_Incidencia` (post-MVP, ADR-010) | C, R (crear y leer limitados a lo que él mismo levanta — ver Nivel 2, nota) | R (todo el plantel) | R (todo el plantel) |
 
 > **Nota — `Asistencia`, gap conocido (ADR-008):** el diseño
 > (`docs/data_dictionary/asistencia.md`) le da a directivo/admin
@@ -49,6 +50,15 @@ gestión de cuentas de `Personal`.
 > editar), sin scope adicional más allá de `require_roles("directivo",
 > "admin")` dado que no hay más de una fila que filtrar.
 
+> **Nota — `Reporte_Incidencia` inmutable (ADR-010):** sin `U`/`D` para
+> ningún rol, incluido `admin` — sin políticas RLS de `UPDATE`/`DELETE`
+> (Postgres deniega por defecto a cualquier rol no-owner/no-superuser) y
+> sin endpoints `PUT`/`DELETE`, mismo patrón que `Auditoria_Calificacion`
+> (Fase 5). Además, a diferencia de `Calificacion`/`Asistencia`, el `C`
+> de docente **no** requiere `Grupo_Asignatura` — cualquier docente
+> activo puede reportar sobre cualquier alumno del plantel (ver Nivel 2
+> y ADR-010 para el razonamiento).
+
 ---
 
 ## Nivel 2: Alcance (scope) por entidad con acceso restringido
@@ -60,6 +70,7 @@ gestión de cuentas de `Personal`.
 | `Calificacion` | `WHERE id_grupo_asig IN (SELECT id_grupo_asig FROM grupo_asignatura WHERE id_docente = current_user_id)` | Todos los del `id_plantel` |
 | `Alumno` (lectura) | Solo alumnos en algún `Grupo` donde el docente tiene `Grupo_Asignatura` activa | Todos los del `id_plantel` |
 | `Asistencia` | `WHERE id_grupo_asig IN (SELECT id_grupo_asig FROM grupo_asignatura WHERE id_docente = current_user_id)` (idéntico a `Calificacion`) | Todos los del `id_plantel` |
+| `Reporte_Incidencia` | `WHERE id_personal_reporta = current_user_id` — **no** vía `Grupo_Asignatura` como todas las demás filas de esta tabla (crear y leer aplican al alumno del plantel completo, no solo a los alumnos de sus propios `Grupo_Asignatura` — ver ADR-010) | Todos los del `id_plantel` |
 
 `directivo` y `admin` comparten el mismo scope en todas las entidades
 operativas/académicas — la diferencia entre ambos vive únicamente en el

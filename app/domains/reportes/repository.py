@@ -13,6 +13,9 @@ def list_reporte_incidencia(db: Session, id_alumno: int | None) -> list[ReporteI
     stmt = select(ReporteIncidencia)
     if id_alumno is not None:
         stmt = stmt.where(ReporteIncidencia.id_alumno == id_alumno)
+    stmt = stmt.order_by(
+        ReporteIncidencia.fecha_incidente.desc(), ReporteIncidencia.id_reporte_incidencia.desc()
+    )
     return list(db.scalars(stmt))
 
 
