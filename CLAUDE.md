@@ -127,13 +127,43 @@ valor mostrado/enviado se **derive** en cada render
 una vez; eso elimina la clase entera de bug, no solo el síntoma
 observado. Ver commit correspondiente para el detalle completo.
 
+**`Reporte_Incidencia` — segunda feature post-MVP, cerrada y confirmada
+(ADR-010).** Mismo patrón que `Asistencia` (ADR-008): entidad nueva
+agregada después del MVP, sin reabrir el resto de entidades excluidas
+por ADR-002. Diseño cerrado en
+`docs/data_dictionary/reporte-incidencia.md`: cualquier docente activo
+puede reportar una incidencia sobre **cualquier alumno del plantel**, no
+solo los de su propio `grupo_asignatura` — desviación deliberada del
+patrón de scope ya usado en `Calificacion`/`Asistencia`, documentada
+explícitamente en ADR-010 (el negocio pidió que una incidencia de
+conducta pueda reportarse aunque el docente no imparta clase a ese
+alumno, ej. pasillo/receso — exigir `grupo_asignatura` bloquearía el
+caso de uso real). Para sostener la búsqueda de alumno fuera de scope
+sin ampliar `alumno_select`, se agregó `fn_alumno_buscar_docente`
+(`SECURITY DEFINER`, mismo patrón acotado que `fn_login_lookup` de
+ADR-007) expuesta vía `GET /alumno/buscar-plantel`. RLS validada con
+`sige_app` directo **antes** de escribir FastAPI (7 casos de matriz, ver
+`docs/validacion/reporte-incidencia.md`, Punto 1); tabla inmutable (sin
+políticas `UPDATE`/`DELETE`, sin endpoints `PUT`/`DELETE`, reconfirmado
+en vivo con `admin`: `405` contra la única ruta que existe,
+`/reporte-incidencia`). Frontend: pantalla de captura para docente
+(`/reporte-incidencia/capturar`, con buscador plantel-wide) y sección
+"Incidencias" en el Perfil de Análisis de Alumno (directivo/admin,
+ADR-009) mostrando fecha, descripción y nombre real del docente autor
+(no un ID crudo). **186 tests pasando** (176 previos + 10 nuevos: 8 en
+`tests/test_reporte_incidencia.py` + 2 en `tests/test_alumnos.py` para
+`buscar-plantel`), y verificación manual end-to-end de los 3 roles
+contra el stack completo (navegador real + `curl`) — ver
+`docs/validacion/reporte-incidencia.md`, Punto 2, para el cierre
+consolidado con evidencia real pegada.
+
 ## Qué leer para qué (no releer todo por defecto)
 
 | Necesito... | Leer |
 |---|---|
 | Entidades, tipos de campo, nulabilidad, sensibilidad de datos | `docs/data_dictionary/mvp.md` |
 | Quién puede hacer qué (CRUD por rol, scope, campos ocultos) | `docs/rbac/matriz-rbac-mvp.md` |
-| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-008.md` (ver resumen abajo) |
+| Por qué el esquema/roles/RLS son como son — **leer antes de proponer cambios de arquitectura** | `docs/decisions/ADR-001.md` a `ADR-010.md` (ver resumen abajo) |
 | El DDL real, ya validado en Postgres 16 (tablas, RLS, funciones helper) | `db/ddl_mvp.sql` |
 | Cómo se traduce ese DDL a Alembic | `app/db/migrations/versions/7460fa835be8_initial_schema_from_ddl_mvp.py` |
 | Cómo levantar todo local (roles, migración automática, /health) | `docker-compose.yml` + `docs/decisions/ADR-006.md` |
@@ -148,6 +178,8 @@ observado. Ver commit correspondiente para el detalle completo.
 | Cierre del frontend del MVP (32/32 fichas menos auditoría) + hallazgo de Plantel/ORDER BY | `docs/validacion/frontend-mvp-cierre.md` |
 | Qué pantalla del frontend cubre cada endpoint, y por qué se priorizó en ese orden | `docs/frontend/01-priorizacion-flujos.md` |
 | Diseño cerrado de Asistencia (campos, RBAC, endpoint de lote/UPSERT) | `docs/data_dictionary/asistencia.md` |
+| Diseño cerrado de Reporte_Incidencia (campos, RBAC, scope sin `grupo_asignatura`, `fn_alumno_buscar_docente`) | `docs/data_dictionary/reporte-incidencia.md` |
+| Cierre y evidencia de Reporte_Incidencia: RLS validada antes de FastAPI (Punto 1) + verificación manual de los 3 roles (Punto 2) | `docs/validacion/reporte-incidencia.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
@@ -159,6 +191,8 @@ observado. Ver commit correspondiente para el detalle completo.
 - **ADR-006**: separación de roles de conexión a Postgres (ver siguiente sección) — el más relevante para cualquier trabajo de infraestructura/backend.
 - **ADR-007**: `fn_login_lookup` (`SECURITY DEFINER`) — excepción acotada a RLS de `Personal` para resolver el login, ya que antes de emitir el JWT no hay `SET app.current_rol`/`app.current_personal_id` que RLS pueda usar.
 - **ADR-008**: `Asistencia` se agrega post-MVP (ADR-002 la excluía) — diseño cerrado, resto de entidades excluidas por ADR-002 siguen fuera de alcance.
+- **ADR-009**: Perfil de Análisis de Alumno — reintroduce `municipio_origen`/`localidad_origen` en `Alumno` (excluidos de `AlumnoOutDocente`) y agrega `GET /alumno?search=`, sin ampliar el scope RLS existente.
+- **ADR-010**: `Reporte_Incidencia` — `reporte_incidencia_insert` sin join a `grupo_asignatura` (cualquier docente activo reporta cualquier alumno del plantel, desviación deliberada del patrón de `Calificacion`/`Asistencia`); `fn_alumno_buscar_docente` (`SECURITY DEFINER`, mismo patrón que ADR-007) para sostener la búsqueda sin ampliar `alumno_select`.
 
 ## Roles de conexión a Postgres (ADR-006) — regla dura
 
