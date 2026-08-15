@@ -505,3 +505,19 @@ def test_expediente_direct_query_docente_in_scope_allowed_by_rls(client, seed, a
         {"id_alumno": alumno["id_alumno"]},
     ).all()
     assert len(rows) == 1
+
+
+def test_buscar_plantel_docente_encuentra_alumno_fuera_de_su_scope_200(client, seed):
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    alumno = _post_alumno(client, admin_headers, seed, n=1, id_grupo=None, nombre="Zoe")
+
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+    resp = client.get("/alumno/buscar-plantel", headers=docente_headers, params={"search": "Zoe"})
+    assert resp.status_code == 200, resp.text
+    assert [a["id_alumno"] for a in resp.json()] == [alumno["id_alumno"]]
+
+
+def test_buscar_plantel_directivo_forbidden_403(client, seed):
+    directivo_headers = auth_headers(client, "directivo1@sige.test", PASSWORD_DIRECTIVO)
+    resp = client.get("/alumno/buscar-plantel", headers=directivo_headers, params={"search": "a"})
+    assert resp.status_code == 403, resp.text
