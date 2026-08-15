@@ -966,7 +966,7 @@ DATABASE_URL_MIGRATIONS=<value from .env> DATABASE_URL=<value from .env> pytest 
 
 (Use whatever `DATABASE_URL`/`DATABASE_URL_MIGRATIONS` values this project's `.env`/`docker-compose.yml` already define for local test runs — same command used to close every prior phase, see `docs/validacion/fase-05-calificaciones.md`.)
 
-Expected: all tests pass, including the new `test_reporte_incidencia.py` (7 tests) and the 2 new `test_alumnos.py` tests. Record the final pass count (previous total was 176 per `CLAUDE.md` — expect 176 + 9 = 185, adjust if the actual baseline differs).
+Expected: all tests pass, including the new `test_reporte_incidencia.py` (7 tests) and the 2 new `test_alumnos.py` tests. Confirmed baseline before this feature: **176 passed** (host-run pytest against a fresh `docker-compose` stack, 2026-08-15) — expect **185** after this task's 9 new tests.
 
 - [ ] **Step 4: Commit**
 
