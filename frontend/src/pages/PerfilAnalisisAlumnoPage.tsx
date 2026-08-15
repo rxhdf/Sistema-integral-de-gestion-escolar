@@ -6,7 +6,8 @@ import { getAsistenciaResumen, type AsistenciaResumenOut } from '@/api/asistenci
 import { getCalificaciones, type CalificacionOut } from '@/api/calificaciones'
 import { getExpedienteAcademico, type ExpedienteAcademicoOut } from '@/api/alumnos'
 import { getPeriodosSemestrales } from '@/api/organizacional'
-import { getPersonalMe, type PersonalMe } from '@/api/personal'
+import { getPersonal, getPersonalMe, type PersonalMe, type PersonalOut } from '@/api/personal'
+import { getReporteIncidencia, type ReporteIncidenciaOut } from '@/api/reportes'
 import { clearToken } from '@/auth/token'
 import { DashboardShell } from '@/components/DashboardShell'
 import { buildNavItems } from '@/lib/navItems'
@@ -27,6 +28,8 @@ interface PerfilData {
   expediente: ExpedienteAcademicoOut | null
   desempeno: DesempenoRow[]
   resumenAsistencia: AsistenciaResumenOut
+  incidencias: ReporteIncidenciaOut[]
+  personal: PersonalOut[]
 }
 
 // docs/data_dictionary/perfil-analisis-alumno.md, Pieza 3: composición en
@@ -35,7 +38,7 @@ interface PerfilData {
 // aceptada ahí, mismo trade-off aquí. No hay GET /alumno/{id} propio: se
 // busca en el listado ya pedido, igual que Grupo/Asignatura/Personal edit.
 async function fetchPerfil(idAlumno: number): Promise<PerfilData> {
-  const [alumnos, grupos, asignaturas, grupoAsignaturas, calificaciones, periodos, resumenAsistencia, expediente] =
+  const [alumnos, grupos, asignaturas, grupoAsignaturas, calificaciones, periodos, resumenAsistencia, expediente, incidencias, personal] =
     await Promise.all([
       getAlumnosFull(),
       getGrupos(),
@@ -45,6 +48,8 @@ async function fetchPerfil(idAlumno: number): Promise<PerfilData> {
       getPeriodosSemestrales(),
       getAsistenciaResumen(idAlumno),
       getExpedienteAcademico(idAlumno).catch(() => null),
+      getReporteIncidencia(idAlumno),
+      getPersonal(),
     ])
 
   const alumno = alumnos.find((a) => a.id_alumno === idAlumno) ?? null
@@ -74,7 +79,12 @@ async function fetchPerfil(idAlumno: number): Promise<PerfilData> {
       }
     })
 
-  return { alumno, grupoNombre, expediente, desempeno, resumenAsistencia }
+  return { alumno, grupoNombre, expediente, desempeno, resumenAsistencia, incidencias, personal }
+}
+
+function nombreDocenteReporta(personal: PersonalOut[], idPersonal: number): string {
+  const p = personal.find((x) => x.id_personal === idPersonal)
+  return p ? `${p.nombre} ${p.apellido_paterno}` : `Personal #${idPersonal}`
 }
 
 // Roles: exclusivo de directivo/admin (docs/data_dictionary/perfil-analisis-alumno.md).
@@ -214,6 +224,24 @@ export function PerfilAnalisisAlumnoPage() {
                   <p className="text-headline-md font-headline-md font-bold">{perfil.data.resumenAsistencia.total}</p>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-surface-container-lowest border border-surface-variant rounded-xl p-6">
+              <h3 className="text-title-md font-title-md font-bold text-on-surface mb-2">Incidencias</h3>
+              {perfil.data.incidencias.length === 0 ? (
+                <p className="text-body-md font-body-md text-secondary">Sin incidencias registradas.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {perfil.data.incidencias.map((r) => (
+                    <li key={r.id_reporte_incidencia} className="border-t border-surface-variant pt-3 first:border-t-0 first:pt-0">
+                      <p className="font-label-md text-label-md text-secondary">
+                        {r.fecha_incidente} — {nombreDocenteReporta(perfil.data!.personal, r.id_personal_reporta)}
+                      </p>
+                      <p className="font-body-md text-body-md text-on-surface">{r.descripcion}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </>
         )}
