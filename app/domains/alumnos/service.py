@@ -101,3 +101,7 @@ def update_expediente(
     if expediente is None:
         return None
     return repository.update_expediente(db, expediente, data.model_dump(exclude_unset=True))
+
+
+def buscar_alumno_plantel(db: Session, search: str) -> list[dict]:
+    return repository.buscar_alumno_plantel(db, search)

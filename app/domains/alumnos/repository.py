@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.domains.alumnos.models import Alumno, ExpedienteAcademico
@@ -63,3 +63,15 @@ def update_expediente(
     db.flush()
     db.refresh(expediente)
     return expediente
+
+
+def buscar_alumno_plantel(db: Session, search: str) -> list[dict]:
+    # fn_alumno_buscar_docente (SECURITY DEFINER, ADR-010): bypassea
+    # alumno_select a propósito para este único caso de uso -- el filtro
+    # de rol vive DENTRO de la función SQL (WHERE app_current_rol() =
+    # 'docente'), no aquí, así que un llamado desde cualquier otro rol
+    # simplemente devuelve 0 filas.
+    rows = db.execute(
+        text("SELECT * FROM fn_alumno_buscar_docente(:search)"), {"search": search}
+    ).mappings().all()
+    return [dict(r) for r in rows]

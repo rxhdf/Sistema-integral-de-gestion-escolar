@@ -102,3 +102,15 @@ class ExpedienteAcademicoUpdate(BaseModel):
     promedio_secundaria: float | None = None
     promedio_actual: float | None = None
     situacion_academica: SituacionAcademica | None = None
+
+
+# ADR-010: campos mínimos de identificación devueltos por
+# fn_alumno_buscar_docente -- deliberadamente más acotado que
+# AlumnoOutDocente (sin curp/fecha_nacimiento/etc.), ya que esta búsqueda
+# opera fuera del scope normal de Alumno para un docente.
+class AlumnoBusquedaDocenteOut(BaseModel):
+    id_alumno: int
+    matricula: str
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: str | None

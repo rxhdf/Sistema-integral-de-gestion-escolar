@@ -5,6 +5,7 @@ from app.core.security import CurrentPersonal, get_current_personal, require_rol
 from app.db.session import get_db
 from app.domains.alumnos import service
 from app.domains.alumnos.schemas import (
+    AlumnoBusquedaDocenteOut,
     AlumnoCreate,
     AlumnoInscribir,
     AlumnoOutDirectivo,
@@ -18,6 +19,20 @@ from app.domains.alumnos.schemas import (
 router = APIRouter()
 
 _puede_escribir = require_roles("directivo", "admin")
+
+
+# ADR-010: excepción de scope -- un docente normalmente solo ve alumnos
+# de sus propios grupo_asignatura (alumno_select). Esta búsqueda es
+# plantel-completo, respaldada por fn_alumno_buscar_docente (SECURITY
+# DEFINER), exclusivamente para poder reportar una incidencia sobre un
+# alumno fuera de su scope habitual. No reemplaza GET /alumno?search=.
+@router.get("/alumno/buscar-plantel", response_model=list[AlumnoBusquedaDocenteOut])
+def get_alumno_buscar_plantel(
+    search: str = Query(min_length=1),
+    db: Session = Depends(get_db),
+    _current: CurrentPersonal = Depends(require_roles("docente")),
+) -> list[AlumnoBusquedaDocenteOut]:
+    return service.buscar_alumno_plantel(db, search)
 
 
 # response_model=None a propósito: esta ruta elige entre dos schemas de
