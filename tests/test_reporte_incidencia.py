@@ -145,3 +145,25 @@ def test_update_delete_directo_bloqueado_por_rls(client, seed):
         )
         assert result.rowcount == 0
         db.rollback()
+
+
+def test_docente_desactivado_reusa_jwt_stale_bloqueado_por_rls_403(client, seed):
+    # Defensa en profundidad de ADR-010: reporte_incidencia_insert exige
+    # EXISTS(... estatus='activo') a nivel de RLS, no solo require_roles
+    # ("docente") a nivel de FastAPI -- un JWT emitido mientras el docente
+    # estaba activo debe seguir siendo rechazado si se reusa después de
+    # que admin lo dé de baja (el JWT no se revoca, sigue siendo válido
+    # hasta su expiración; el rechazo real lo hace RLS, no el login).
+    admin_headers = auth_headers(client, "admin1@sige.test", PASSWORD_ADMIN)
+    alumno = _post_alumno(client, admin_headers, seed, n=1, id_grupo=None)
+
+    docente_headers = auth_headers(client, "docente1@sige.test", PASSWORD_DOCENTE)
+
+    id_docente = seed["ids"]["docente1@sige.test"]
+    put_resp = client.put(
+        f"/personal/{id_docente}", headers=admin_headers, json={"estatus": "baja"}
+    )
+    assert put_resp.status_code == 200, put_resp.text
+
+    resp = _post_reporte(client, docente_headers, alumno["id_alumno"])
+    assert resp.status_code == 403, resp.text
