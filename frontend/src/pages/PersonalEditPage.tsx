@@ -169,11 +169,22 @@ export function PersonalEditPage() {
         <div className="bg-surface-container-lowest border border-surface-variant rounded-xl p-6">
           <h2 className="text-headline-md font-headline-md font-bold text-on-surface mb-4">Edición de personal</h2>
 
-          {listado.loading ? (
+          {listado.loading || personal.loading ? (
             <div aria-hidden="true" className="h-40 bg-surface-container animate-pulse rounded-lg" />
           ) : listado.error ? (
             <div role="alert" className="rounded-md border border-error bg-error-container px-sm py-sm font-label-md text-label-md text-on-error-container">
               {listado.error}
+            </div>
+          ) : !esAdmin ? (
+            // Matriz RBAC Nivel 1: directivo solo tiene R sobre Personal (sin
+            // U) -- GET /personal (arriba) le permite llegar a esta página
+            // porque X también lee el listado, pero el formulario de edición
+            // es admin únicamente. Gate explícito aquí, no solo el 403 de
+            // PUT /personal/{id} al enviar: sin esto, directivo veía el
+            // formulario completo prellenado y solo se enteraba de que no
+            // podía editar hasta darle "Guardar".
+            <div role="alert" className="rounded-md border border-error bg-error-container px-sm py-sm font-label-md text-label-md text-on-error-container">
+              No tienes permiso para editar personal.
             </div>
           ) : notFound ? (
             <div role="alert" className="rounded-md border border-error bg-error-container px-sm py-sm font-label-md text-label-md text-on-error-container">

@@ -201,11 +201,28 @@ sección "Restablecer contraseña" (colapsada tras un botón, formulario
 propio con su error/success separado del formulario principal) y
 "Historial de accesos" (lista de `GET /log-acceso?id_personal=`, motivo
 de fallo traducido a texto legible) — ambas con gate explícito en el
-cliente (`personal.data?.rol === 'admin'`), no solo el 403 del backend,
-verificado en vivo: `directivo` llega a la página (Nivel 1 de la matriz,
-R sobre `Personal`, gap ya preexistente) pero nunca ve esas 2 secciones;
+cliente (`personal.data?.rol === 'admin'`), no solo el 403 del backend;
 `docente` ni siquiera llega (`GET /personal` le da 403, la página entera
 cae en su bloque de error antes de renderizar el formulario).
+
+**Gap de Nivel 1 encontrado y corregido en el mismo cierre:** antes de
+esta corrección, `PersonalEditPage.tsx` no tenía ningún gate de rol
+sobre el formulario de edición en sí (solo sobre las 2 secciones nuevas)
+— un `directivo` (Nivel 1 de la matriz: solo `R` sobre `Personal`, sin
+`U`) que navegara directo a `/personal/{id}/editar` veía el formulario
+completo prellenado y editable en la UI, aunque cualquier `Guardar`
+terminara en `403` real del backend. Corregido con el mismo gate
+explícito (`esAdmin`) ya usado para las 2 secciones nuevas, mostrando
+"No tienes permiso para editar personal." en su lugar — verificado con
+evidencia real de identidad (dashboard con nav completo de directivo
+*antes* de navegar a la página bloqueada, no solo el mensaje de error)
+contra una base de datos de desarrollo limpia, sin regresión para
+`admin`. Ver `docs/validacion/gestion-cuentas-frontend.md` para el
+detalle completo, incluida una condición de carrera real encontrada
+durante la primera verificación (`pytest` en segundo plano truncando la
+misma base de datos de desarrollo a mitad de la prueba con navegador —
+mismo patrón ya documentado en `docs/validacion/gestion-cuentas.md` y
+`docs/validacion/reporte-incidencia.md`).
 `PersonalListPage.tsx` gana un toggle rápido "Bloquear"/"Desbloquear" por
 fila (mismo patrón que el activar/desactivar de
 `PeriodoSemestralListPage.tsx`), oculto para filas con `estatus='baja'`
@@ -246,6 +263,7 @@ ni por nav ni por URL directa. `tsc -b`, `vite build`, `oxlint` y
 | Cierre y evidencia de Reporte_Incidencia: RLS validada antes de FastAPI (Punto 1) + verificación manual de los 3 roles (Punto 2) | `docs/validacion/reporte-incidencia.md` |
 | Diseño cerrado de Gestión de Cuentas (reset-password, bloqueo temporal, log de accesos) | `docs/data_dictionary/gestion-cuentas.md` |
 | Cierre y evidencia de Gestión de Cuentas (backend): RLS/CHECK validados antes de FastAPI, 197 tests, verificación end-to-end con curl | `docs/validacion/gestion-cuentas.md` |
+| Cierre y evidencia de Gestión de Cuentas (frontend): flujo completo con navegador real + gap de Nivel 1 (directivo en `PersonalEditPage.tsx`) corregido | `docs/validacion/gestion-cuentas-frontend.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
