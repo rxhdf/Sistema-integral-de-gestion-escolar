@@ -1,5 +1,11 @@
 import { apiGet, apiPost, apiPut } from '@/api/client'
 
+// Contrato real: app/domains/personal/schemas.py::EstatusPersonal.
+// 'bloqueado' agregado en Gestión de Cuentas Pieza 2 (ADR-011 /
+// docs/data_dictionary/gestion-cuentas.md) -- reversible, distinto de
+// 'baja' (permanente).
+export type EstatusPersonal = 'activo' | 'baja' | 'bloqueado'
+
 // Contrato real: app/domains/personal/schemas.py::PersonalOutSelf (== PersonalOut,
 // incluye id_plantel -- lo reusamos para no pedir GET /plantel aparte al armar
 // el alta de personal, MVP de un solo plantel).
@@ -43,7 +49,7 @@ export interface PersonalOut {
   telefono: string | null
   fecha_ingreso: string | null
   id_personal: number
-  estatus: string
+  estatus: EstatusPersonal
 }
 
 // Rol(es): X, A (require_roles("directivo", "admin")) -- ficha 9.
@@ -73,11 +79,18 @@ export interface PersonalUpdate {
   telefono?: string | null
   fecha_ingreso?: string | null
   rol?: 'docente' | 'directivo' | 'admin'
-  estatus?: string
+  estatus?: EstatusPersonal
 }
 
 // Rol(es): A únicamente -- ficha 24. 409 si el único admin activo intenta
 // auto-degradarse o auto-darse de baja (LastActiveAdminError, ya traducido).
 export function putPersonal(idPersonal: number, data: PersonalUpdate): Promise<PersonalOut> {
   return apiPut<PersonalOut>(`/personal/${idPersonal}`, data)
+}
+
+// Rol(es): A únicamente -- Gestión de Cuentas Pieza 1
+// (docs/data_dictionary/gestion-cuentas.md). El admin define la
+// contraseña directamente, sin flujo de correo.
+export function putPersonalResetPassword(idPersonal: number, nuevaPassword: string): Promise<PersonalOut> {
+  return apiPut<PersonalOut>(`/personal/${idPersonal}/reset-password`, { nueva_password: nuevaPassword })
 }

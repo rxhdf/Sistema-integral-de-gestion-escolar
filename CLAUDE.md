@@ -158,7 +158,7 @@ contra el stack completo (navegador real + `curl`) — ver
 consolidado con evidencia real pegada.
 
 **`Gestión de Cuentas` (backend) — tercera feature post-MVP, cerrada y
-confirmada (ADR-011). Frontend pendiente, siguiente paso.** Diseño
+confirmada (ADR-011).** Diseño
 cerrado en `docs/data_dictionary/gestion-cuentas.md`, 3 piezas: (1)
 `PUT /personal/{id}/reset-password`, admin únicamente, reutiliza
 `hash_password`; (2) bloqueo temporal reversible —
@@ -190,6 +190,36 @@ frontend (admin resetea contraseña → docente entra con la nueva →
 admin bloquea → login falla → `GET /log-acceso` muestra ambos eventos
 con el motivo correcto) — ver `docs/validacion/gestion-cuentas.md` para
 el cierre consolidado con evidencia real pegada.
+
+**`Gestión de Cuentas` (frontend) — cerrado.** Sin pantallas nuevas ni
+rutas nuevas: las 3 piezas viven dentro de `PersonalListPage.tsx`/
+`PersonalEditPage.tsx` ya existentes (el diseño mismo lo sugería para
+Pieza 3 — "dentro del detalle de Personal" — y se extendió el mismo
+criterio a las otras 2 en vez de introducir un patrón de modal que no
+existe en ningún otro lugar del código). `PersonalEditPage.tsx` gana una
+sección "Restablecer contraseña" (colapsada tras un botón, formulario
+propio con su error/success separado del formulario principal) y
+"Historial de accesos" (lista de `GET /log-acceso?id_personal=`, motivo
+de fallo traducido a texto legible) — ambas con gate explícito en el
+cliente (`personal.data?.rol === 'admin'`), no solo el 403 del backend,
+verificado en vivo: `directivo` llega a la página (Nivel 1 de la matriz,
+R sobre `Personal`, gap ya preexistente) pero nunca ve esas 2 secciones;
+`docente` ni siquiera llega (`GET /personal` le da 403, la página entera
+cae en su bloque de error antes de renderizar el formulario).
+`PersonalListPage.tsx` gana un toggle rápido "Bloquear"/"Desbloquear" por
+fila (mismo patrón que el activar/desactivar de
+`PeriodoSemestralListPage.tsx`), oculto para filas con `estatus='baja'`
+(permanente, no forma parte de este toggle reversible) — decisión propia
+del criterio pedido en la tarea, no explícita en el diseño. El botón
+"Gestión de cuentas" del dashboard de admin (mockup de Stitch, antes
+inerte) ahora navega a `/personal`. Verificado end-to-end con navegador
+real (`claude-in-chrome`): admin resetea la contraseña de
+`docente@cobao.edu.mx` desde la UI y el docente entra con la nueva desde
+una pestaña aparte; admin bloquea la cuenta desde el toggle de la lista y
+el siguiente intento de login de esa cuenta falla, reflejado de inmediato
+en "Historial de accesos"; `docente`/`directivo` confirmados sin acceso
+ni por nav ni por URL directa. `tsc -b`, `vite build`, `oxlint` y
+`vitest run` limpios.
 
 ## Qué leer para qué (no releer todo por defecto)
 
@@ -253,13 +283,6 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
-- Frontend de `Gestión de Cuentas` (docs/data_dictionary/gestion-cuentas.md):
-  backend cerrado (ver arriba, ADR-011), sin pantallas todavía — botón
-  "Restablecer contraseña" en `PersonalListPage.tsx`, opción "Bloqueado"
-  en el selector de estatus de `PersonalEditPage.tsx`, y sección
-  "Historial de accesos" (solo admin) en el detalle de personal. No
-  tocar `frontend/` para esto sin que el usuario lo pida explícitamente
-  como siguiente paso.
 - PENDIENTE CRÍTICO - marco legal de protección de datos: el proyecto se
   definió originalmente bajo LGPDPPSO (sujetos obligados, dado que el
   COBAO es entidad pública), documentado en SIGE_Contexto_Proyecto.md. En

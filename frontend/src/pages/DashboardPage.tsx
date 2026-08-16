@@ -133,9 +133,14 @@ export function DashboardPage() {
                 <p className="text-body-md font-body-md text-on-surface-variant mb-6">
                   Administre los roles, permisos y accesos del personal operativo del plantel.
                 </p>
+                {/* Gestión de Cuentas (reset-password, bloqueo, historial de
+                    accesos) vive dentro de PersonalListPage/PersonalEditPage
+                    -- no hay pantalla propia aparte, así que este botón
+                    (antes inerte, mockup de Stitch) navega directo ahí. */}
                 <button
                   className="w-full bg-primary text-on-primary py-3 px-4 rounded-lg font-label-md font-bold hover:bg-on-primary-fixed-variant transition-colors flex items-center justify-center gap-2"
                   type="button"
+                  onClick={() => navigate('/personal')}
                 >
                   Acceder al panel
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
