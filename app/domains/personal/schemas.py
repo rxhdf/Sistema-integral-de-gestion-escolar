@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 RolPersonal = Literal["docente", "directivo", "admin"]
+EstatusPersonal = Literal["activo", "baja", "bloqueado"]
 
 
 class PersonalBase(BaseModel):
@@ -58,7 +59,11 @@ class PersonalUpdate(BaseModel):
     telefono: str | None = Field(default=None, max_length=20)
     fecha_ingreso: date | None = None
     rol: RolPersonal | None = None
-    estatus: str | None = Field(default=None, max_length=20)
+    estatus: EstatusPersonal | None = None
+
+
+class PasswordReset(BaseModel):
+    nueva_password: str = Field(min_length=8)
 
 
 class LoginRequest(BaseModel):

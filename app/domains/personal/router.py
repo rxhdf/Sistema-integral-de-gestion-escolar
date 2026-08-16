@@ -14,6 +14,7 @@ from app.db.session import get_db
 from app.domains.personal import service
 from app.domains.personal.schemas import (
     LoginRequest,
+    PasswordReset,
     PersonalCreate,
     PersonalOut,
     PersonalOutSelf,
@@ -85,6 +86,21 @@ def put_personal(
         personal = service.update_personal(db, current, id_personal, payload)
     except service.LastActiveAdminError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    if personal is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Registro no encontrado")
+    return personal
+
+
+# Gestión de Cuentas, Pieza 1 (docs/data_dictionary/gestion-cuentas.md):
+# solo admin resetea contraseñas, el admin la define directamente.
+@router.put("/personal/{id_personal}/reset-password", response_model=PersonalOut)
+def put_personal_reset_password(
+    id_personal: int,
+    payload: PasswordReset,
+    db: Session = Depends(get_db),
+    _current: CurrentPersonal = Depends(require_roles("admin")),
+) -> PersonalOut:
+    personal = service.reset_password(db, id_personal, payload.nueva_password)
     if personal is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Registro no encontrado")
     return personal

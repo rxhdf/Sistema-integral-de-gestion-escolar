@@ -157,6 +157,40 @@ contra el stack completo (navegador real + `curl`) — ver
 `docs/validacion/reporte-incidencia.md`, Punto 2, para el cierre
 consolidado con evidencia real pegada.
 
+**`Gestión de Cuentas` (backend) — tercera feature post-MVP, cerrada y
+confirmada (ADR-011). Frontend pendiente, siguiente paso.** Diseño
+cerrado en `docs/data_dictionary/gestion-cuentas.md`, 3 piezas: (1)
+`PUT /personal/{id}/reset-password`, admin únicamente, reutiliza
+`hash_password`; (2) bloqueo temporal reversible —
+`personal.estatus` gana un `CHECK ('activo', 'baja', 'bloqueado')` que
+**no existía antes** (el diseño lo describe como "ampliar" un CHECK
+preexistente, pero `estatus` era `VARCHAR(20)` sin restricción alguna —
+se creó de una vez con los 3 valores), `fn_login_lookup` (ADR-007) ya
+rechaza `'bloqueado'` sin tocar esa función (verificado con `sige_app`
+directo, no asumido) porque sigue filtrando `estatus = 'activo'`; (3)
+`log_acceso` — historial completo de intentos de login (éxitos y
+fallos, **nunca** la contraseña intentada), solo `admin` lee, tabla
+inmutable, único camino de escritura `fn_registrar_intento_login`
+(`SECURITY DEFINER`). ADR-011 documenta por qué esa función es
+**separada** de `fn_login_lookup` en vez de ampliarla: `fn_login_lookup`
+está documentada en ADR-007 como "solo lectura" por construcción del
+lenguaje, y su filtro interno de `estatus='activo'` oculta justo la
+distinción (`cuenta_bloqueada` / `cuenta_baja` / `credenciales_invalidas`)
+que el log necesita para `motivo_fallo` — ampliarla habría roto ambas
+invariantes de una función ya validada en Fase 0/1. Detalle no obvio:
+`app/core/security.py::authenticate_personal` hace un `db.commit()`
+explícito justo después de registrar el intento, porque un login
+fallido levanta `HTTPException(401)` y eso dispara `rollback()` en
+`get_db` — sin ese commit temprano, la fila de `log_acceso` de cada
+intento **fallido** (el caso que este log más necesita capturar) se
+perdería. **197 tests pasando** (187 previos + 10 nuevos en
+`tests/test_gestion_cuentas.py`), RLS validada con `sige_app` directo
+antes de escribir FastAPI, y verificación end-to-end con `curl` sin
+frontend (admin resetea contraseña → docente entra con la nueva →
+admin bloquea → login falla → `GET /log-acceso` muestra ambos eventos
+con el motivo correcto) — ver `docs/validacion/gestion-cuentas.md` para
+el cierre consolidado con evidencia real pegada.
+
 ## Qué leer para qué (no releer todo por defecto)
 
 | Necesito... | Leer |
@@ -180,6 +214,8 @@ consolidado con evidencia real pegada.
 | Diseño cerrado de Asistencia (campos, RBAC, endpoint de lote/UPSERT) | `docs/data_dictionary/asistencia.md` |
 | Diseño cerrado de Reporte_Incidencia (campos, RBAC, scope sin `grupo_asignatura`, `fn_alumno_buscar_docente`) | `docs/data_dictionary/reporte-incidencia.md` |
 | Cierre y evidencia de Reporte_Incidencia: RLS validada antes de FastAPI (Punto 1) + verificación manual de los 3 roles (Punto 2) | `docs/validacion/reporte-incidencia.md` |
+| Diseño cerrado de Gestión de Cuentas (reset-password, bloqueo temporal, log de accesos) | `docs/data_dictionary/gestion-cuentas.md` |
+| Cierre y evidencia de Gestión de Cuentas (backend): RLS/CHECK validados antes de FastAPI, 197 tests, verificación end-to-end con curl | `docs/validacion/gestion-cuentas.md` |
 
 ### Resumen de 1 línea por ADR (no sustituye leerlos completos)
 
@@ -193,6 +229,7 @@ consolidado con evidencia real pegada.
 - **ADR-008**: `Asistencia` se agrega post-MVP (ADR-002 la excluía) — diseño cerrado, resto de entidades excluidas por ADR-002 siguen fuera de alcance.
 - **ADR-009**: Perfil de Análisis de Alumno — reintroduce `municipio_origen`/`localidad_origen` en `Alumno` (excluidos de `AlumnoOutDocente`) y agrega `GET /alumno?search=`, sin ampliar el scope RLS existente.
 - **ADR-010**: `Reporte_Incidencia` — `reporte_incidencia_insert` sin join a `grupo_asignatura` (cualquier docente activo reporta cualquier alumno del plantel, desviación deliberada del patrón de `Calificacion`/`Asistencia`); `fn_alumno_buscar_docente` (`SECURITY DEFINER`, mismo patrón que ADR-007) para sostener la búsqueda sin ampliar `alumno_select`.
+- **ADR-011**: `fn_registrar_intento_login` — función `SECURITY DEFINER` **separada** de `fn_login_lookup` (no una ampliación) para escribir `log_acceso`; `fn_login_lookup` es "solo lectura" por diseño de ADR-007 y su filtro `estatus='activo'` oculta justo la distinción que `motivo_fallo` necesita.
 
 ## Roles de conexión a Postgres (ADR-006) — regla dura
 
@@ -216,6 +253,13 @@ necesite tocar la BD usa `DATABASE_URL` (`sige_app`), nunca
 
 ## Pendientes abiertos ahora mismo
 
+- Frontend de `Gestión de Cuentas` (docs/data_dictionary/gestion-cuentas.md):
+  backend cerrado (ver arriba, ADR-011), sin pantallas todavía — botón
+  "Restablecer contraseña" en `PersonalListPage.tsx`, opción "Bloqueado"
+  en el selector de estatus de `PersonalEditPage.tsx`, y sección
+  "Historial de accesos" (solo admin) en el detalle de personal. No
+  tocar `frontend/` para esto sin que el usuario lo pida explícitamente
+  como siguiente paso.
 - PENDIENTE CRÍTICO - marco legal de protección de datos: el proyecto se
   definió originalmente bajo LGPDPPSO (sujetos obligados, dado que el
   COBAO es entidad pública), documentado en SIGE_Contexto_Proyecto.md. En

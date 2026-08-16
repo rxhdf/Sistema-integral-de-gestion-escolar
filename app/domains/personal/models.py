@@ -10,6 +10,9 @@ class Personal(Base):
     __tablename__ = "personal"
     __table_args__ = (
         CheckConstraint("rol IN ('docente', 'directivo', 'admin')", name="chk_personal_rol"),
+        CheckConstraint(
+            "estatus IN ('activo', 'baja', 'bloqueado')", name="chk_personal_estatus"
+        ),
     )
 
     id_personal: Mapped[int] = mapped_column(Integer, primary_key=True)

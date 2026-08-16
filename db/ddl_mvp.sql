@@ -82,7 +82,13 @@ CREATE TABLE personal (
     rol                 VARCHAR(20) NOT NULL CHECK (rol IN ('docente', 'directivo', 'admin')),
     telefono            VARCHAR(20),
     fecha_ingreso       DATE,
+    -- 'bloqueado' agregado en Gestión de Cuentas Pieza 2 (ver
+    -- docs/data_dictionary/gestion-cuentas.md): bloqueo temporal,
+    -- reversible, distinto de 'baja' (permanente). fn_login_lookup
+    -- (ADR-007) ya filtra estatus = 'activo', así que 'bloqueado' queda
+    -- rechazado en el login sin tocar esa función.
     estatus             VARCHAR(20) NOT NULL DEFAULT 'activo'
+        CHECK (estatus IN ('activo', 'baja', 'bloqueado'))
 );
 
 -- ---------------------------------------------------------------------
@@ -673,3 +679,77 @@ $$;
 
 REVOKE ALL ON FUNCTION fn_actualizar_promedio_actual(INT, NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fn_actualizar_promedio_actual(INT, NUMERIC) TO sige_app;
+
+-- =====================================================================
+-- LOG_ACCESO — Gestión de Cuentas Pieza 3, ADR-011
+-- Historial completo de intentos de login, exitosos y fallidos. NUNCA
+-- guarda la contraseña intentada, en ninguna forma. Solo admin lee
+-- (log_acceso_select); sin políticas de INSERT/UPDATE/DELETE -- Postgres
+-- deniega esas operaciones por defecto a sige_app (no es owner/superuser)
+-- aunque tenga GRANT de tabla vía ALTER DEFAULT PRIVILEGES (ADR-006); el
+-- único camino de escritura es fn_registrar_intento_login más abajo.
+-- =====================================================================
+CREATE TABLE log_acceso (
+    id_log          SERIAL PRIMARY KEY,
+    email_intentado VARCHAR(100) NOT NULL,
+    id_personal     INT REFERENCES personal(id_personal),
+    exitoso         BOOLEAN NOT NULL,
+    motivo_fallo    VARCHAR(50),
+    fecha_intento   TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_log_acceso_id_personal ON log_acceso (id_personal);
+CREATE INDEX idx_log_acceso_fecha_intento ON log_acceso (fecha_intento DESC);
+
+ALTER TABLE log_acceso ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY log_acceso_select ON log_acceso
+    FOR SELECT
+    USING (app_current_rol() = 'admin');
+
+-- =====================================================================
+-- REGISTRO DE INTENTO DE LOGIN — ADR-011
+-- Excepción SECURITY DEFINER separada de fn_login_lookup (no una
+-- ampliación de esa función -- ver ADR-011 para el razonamiento
+-- completo): fn_login_lookup está documentada en ADR-007 como
+-- "solo lectura" por construcción del lenguaje, y filtra
+-- estatus = 'activo' en su propio WHERE, así que nunca revela si una
+-- cuenta inactiva existe -- justo la distinción que este log necesita
+-- para poblar motivo_fallo. Recibe únicamente email + un booleano de
+-- éxito ya calculado por app/core/security.py -- la contraseña intentada
+-- nunca transita por esta función.
+-- =====================================================================
+CREATE OR REPLACE FUNCTION fn_registrar_intento_login(p_email VARCHAR(100), p_exitoso BOOLEAN)
+RETURNS VOID
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id_personal INT;
+    v_estatus     VARCHAR(20);
+    v_motivo      VARCHAR(50);
+BEGIN
+    SELECT id_personal, estatus INTO v_id_personal, v_estatus
+    FROM personal
+    WHERE email_institucional = p_email;
+
+    IF NOT p_exitoso THEN
+        IF v_id_personal IS NULL THEN
+            v_motivo := 'credenciales_invalidas';
+        ELSIF v_estatus = 'bloqueado' THEN
+            v_motivo := 'cuenta_bloqueada';
+        ELSIF v_estatus = 'baja' THEN
+            v_motivo := 'cuenta_baja';
+        ELSE
+            v_motivo := 'credenciales_invalidas';
+        END IF;
+    END IF;
+
+    INSERT INTO log_acceso (email_intentado, id_personal, exitoso, motivo_fallo)
+    VALUES (p_email, v_id_personal, p_exitoso, v_motivo);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION fn_registrar_intento_login(VARCHAR, BOOLEAN) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_registrar_intento_login(VARCHAR, BOOLEAN) TO sige_app;

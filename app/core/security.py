@@ -54,16 +54,29 @@ def authenticate_personal(db: Session, email: str, password: str) -> LoginResult
     existe JWT ni sesión: RLS de `personal` denegaría la lectura por email
     (nadie hizo SET app.current_rol / app.current_personal_id todavía —
     ver ADR-007). fn_login_lookup ya filtra estatus = 'activo' internamente,
-    así que un personal dado de baja nunca llega aquí con fila.
+    así que un personal dado de baja o bloqueado nunca llega aquí con fila.
     """
     row = (
         db.execute(text("SELECT * FROM fn_login_lookup(:email)"), {"email": email})
         .mappings()
         .first()
     )
-    if row is None:
-        return None
-    if not verify_password(password, row["password_hash"]):
+    exitoso = row is not None and verify_password(password, row["password_hash"])
+
+    # Registra el intento (ADR-011) vía fn_registrar_intento_login, que
+    # resuelve id_personal/motivo_fallo internamente. Commit explícito aquí,
+    # fuera del ciclo normal de get_db: un login fallido levanta
+    # HTTPException en el router, y eso hace que get_db haga rollback de
+    # toda la transacción del request (ver app/db/session.py) -- sin este
+    # commit, cada fila de log_acceso de un intento FALLIDO se perdería,
+    # justo el caso que este log más necesita capturar.
+    db.execute(
+        text("SELECT fn_registrar_intento_login(:email, :exitoso)"),
+        {"email": email, "exitoso": exitoso},
+    )
+    db.commit()
+
+    if not exitoso:
         return None
     return LoginResult(id_personal=row["id_personal"], rol=row["rol"])
 

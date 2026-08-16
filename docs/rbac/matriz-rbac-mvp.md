@@ -29,6 +29,7 @@ gestión de cuentas de `Personal`.
 | `Calificacion` | C, R, U (solo de sus `Grupo_Asignatura`) | R, U (puede corregir calificación ya capturada por docente) | R, U (mismo alcance que directivo) |
 | `Asistencia` (post-MVP, ADR-008) | C, R, U (solo de sus `Grupo_Asignatura`, ver nota) | R (mismo alcance que `Calificacion`) | R (mismo alcance que `Calificacion`) |
 | `Reporte_Incidencia` (post-MVP, ADR-010) | C, R (crear y leer limitados a lo que él mismo levanta — ver Nivel 2, nota) | R (todo el plantel) | R (todo el plantel) |
+| `Log_Acceso` (post-MVP, Gestión de Cuentas Pieza 3, ADR-011) | Sin acceso | Sin acceso | R únicamente (sin C/U/D vía API — el único INSERT posible es `fn_registrar_intento_login`, `SECURITY DEFINER`, invocado por el flujo de login; tabla inmutable, mismo patrón que `Auditoria_Calificacion`/`Reporte_Incidencia`) |
 
 > **Nota — `Asistencia`, gap conocido (ADR-008):** el diseño
 > (`docs/data_dictionary/asistencia.md`) le da a directivo/admin
@@ -49,6 +50,16 @@ gestión de cuentas de `Personal`.
 > `{id_plantel}` en el path — es la única fila, no hay ambigüedad de cuál
 > editar), sin scope adicional más allá de `require_roles("directivo",
 > "admin")` dado que no hay más de una fila que filtrar.
+
+> **Nota — `Personal`, Gestión de Cuentas (post-MVP):** el `U` de `admin`
+> sobre `Personal` incluye dos capacidades agregadas después del MVP
+> (`docs/data_dictionary/gestion-cuentas.md`): reseteo directo de
+> contraseña (`PUT /personal/{id}/reset-password`, admin únicamente, sin
+> flujo de correo) y bloqueo temporal reversible
+> (`estatus = 'bloqueado'`, vía el mismo `PUT /personal/{id}` ya
+> existente — distinto de `baja`, que es permanente). `directivo` no tiene
+> ninguna de las dos, mismo criterio que el resto de escritura sobre
+> `Personal`.
 
 > **Nota — `Reporte_Incidencia` inmutable (ADR-010):** sin `U`/`D` para
 > ningún rol, incluido `admin` — sin políticas RLS de `UPDATE`/`DELETE`

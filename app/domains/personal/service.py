@@ -70,3 +70,15 @@ def update_personal(
             )
 
     return repository.update_personal(db, target, fields)
+
+
+def reset_password(db: Session, id_personal: int, nueva_password: str) -> Personal | None:
+    """Pieza 1 de Gestión de Cuentas: el admin asigna la contraseña
+    directamente (sin flujo de "olvidé mi contraseña" por correo, ver
+    docs/data_dictionary/gestion-cuentas.md). Sin guard de "único admin
+    activo": resetear una contraseña no cambia rol ni estatus, así que no
+    hay riesgo de dejar el sistema sin ningún admin activo."""
+    target = repository.get_by_id(db, id_personal)
+    if target is None:
+        return None
+    return repository.update_personal(db, target, {"password_hash": hash_password(nueva_password)})
