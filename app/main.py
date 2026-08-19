@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
+from fastapi.openapi.docs import get_swagger_ui_html
 
 from app.core.config import CORS_ALLOWED_ORIGINS
 from app.db.session import engine
@@ -21,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+        swagger_favicon_url="https://fastapi.tiangolo.com/img/favicon.png",
+    )
 
 # API pura -- sin HTML propio, por eso el CSP es 'none'/'none' en vez de
 # 'self'. Defensa en profundidad: nosniff evita que un navegador reinterprete
