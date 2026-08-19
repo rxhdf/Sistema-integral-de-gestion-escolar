@@ -176,10 +176,10 @@ def upgrade() -> None:
     # migracion y no depende de que el ALTER DEFAULT PRIVILEGES se haya
     # configurado correctamente en el ambiente.
     print("-> GRANT sobre tablas de negocio a sige_app (runtime, sin owner)")
-    op.execute(
-        "GRANT SELECT, INSERT, UPDATE, DELETE "
-        "ON ALL TABLES IN SCHEMA public TO sige_app;"
-    )
+   # op.execute(
+   #     "GRANT SELECT, INSERT, UPDATE, DELETE "
+   #     "ON ALL TABLES IN SCHEMA public TO sige_app;"
+   # )
     op.execute(
         "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sige_app;"
     )
