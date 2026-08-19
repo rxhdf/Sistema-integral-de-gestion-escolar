@@ -45,11 +45,13 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         *CORS_ALLOWED_ORIGINS,
+        "*"
     ],
     # Set real de verbos/headers que usa la API (GET/POST/PUT, auth Bearer +
     # JSON) -- ampliar aquí si se agrega DELETE/PATCH a algún router.
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Authorization", "Content-Type"],
+    allow_credentials=True,
 )
 
 app.include_router(auth_router, tags=["auth"])
