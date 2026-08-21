@@ -23,7 +23,7 @@ CREATE TABLE plantel (
 -- ---------------------------------------------------------------------
 -- 2. CICLO_ESCOLAR
 -- ---------------------------------------------------------------------
-CREATE TABLE ciclo_escolar (
+CREATE TABLE IF NOT EXISTS ciclo_escolar (
     id_ciclo        SERIAL PRIMARY KEY,
     nombre          VARCHAR(20) NOT NULL UNIQUE,
     fecha_inicio    DATE NOT NULL,
