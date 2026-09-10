@@ -1,7 +1,7 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.1
 sqlalchemy==2.0.52
-alembic==1.19.1
+alembic==1.19.2
 # psycopg2-binary trae su propio libpq/OpenSSL empaquetado -- upstream no
 # lo recomienda para producción porque puede quedar con OpenSSL viejo si no
 # se reinstala. Se mantiene por simplicidad de build (evita agregar gcc/
