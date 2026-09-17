@@ -9,6 +9,6 @@ alembic==1.19.1
 # (.github/workflows/ci.yml) detecta si esta wheel recibe un CVE conocido.
 # Migrar a psycopg2 (requiere build deps) si se necesita control fino sobre
 # la versión de OpenSSL antes de producción.
-psycopg2-binary==2.9.12
+psycopg2-binary==2.9.13
 pyjwt==2.13.0
 bcrypt==5.0.0
